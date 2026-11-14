@@ -18,3 +18,5 @@ app/dist/
 # sistema
 .DS_Store
 Thumbs.db
+
+data/clean_*/
