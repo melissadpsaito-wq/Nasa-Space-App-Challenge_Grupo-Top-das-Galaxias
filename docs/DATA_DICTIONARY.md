@@ -24,6 +24,7 @@ Filtros já aplicados: `type = 0`, MODIS conf ≥ 30, VIIRS conf ∈ {n, h}, ts 
 | frp_mean, frp_p90 | float | FRP médio e percentil 90 |
 | night_frac | float | fração noturna |
 | pix_area | float | área média do pixel (km²) |
+| frp_sum | float | Σ FRP de todos os pixels no mês (MW) — coluna extra para teste (D29, texto pendente) |
 
 ## 3. `app/public/data/harm_monthly.json` (consumido pelo Front)
 ```json
@@ -53,7 +54,7 @@ Regras: vetores alinhados com `months`; valores multiplicados por 10 e arredonda
 ## 5. Arquivos entre Dados e Ciência (proposta — aprovar na revisão das 10:00, R13)
 | Arquivo | Colunas mínimas | Escreve | Lê |
 |---|---|---|---|
-| `data/interim/grid2km_pass.parquet` | sensor, ts, daynight, gy, gx (`floor(lat/0,02)`, `floor(lon/0,02)`), cell (H3 res 4), ym, `frp_max`, n_pix, pix_area · passagem = sensor + ts + daynight · o M2 lê `sensor, cell, ym, daynight, frp_max` (`base.passes_reader`) | Murilo | Melissa |
+| `data/interim/grid2km_pass.parquet` | sensor, ts, daynight, gy, gx (`floor(lat/0,02)`, `floor(lon/0,02)`), cell (H3 res 4), ym, `frp_max`, `frp_sum` (Σ FRP dos pixels da célula), n_pix, pix_area · passagem = sensor + ts + daynight · o M2 lê `sensor, cell, ym, daynight, frp_max` (`base.passes_reader`) | Murilo | Melissa |
 | `data/processed/harm_series.parquet` | cell, ym, n_harm, n_raw, lo, hi, low_conf, src | Melissa | Murilo |
 Resumo do FRP dentro da célula de 2 km: **máximo** (D26, proposta). Unidade de `n_harm`: detecções por célula de 0,02° por passagem, escala S-NPP (D03). Contrato interno Melissa × Samuel: `docs/CONTRATO-CIENCIA.md`.
 

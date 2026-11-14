@@ -1,4 +1,4 @@
-# Checklist de envio (dom, alvo 20:00)
+# Checklist de envio (dom, alvo 21:00 — D23)
 
 Revisar com 2 pessoas. Tudo em inglês.
 
@@ -19,8 +19,14 @@ Revisar com 2 pessoas. Tudo em inglês.
 - [ ] Link to Final Project (app publicado) — testado em janela anônima
 - [ ] Detailed Project Description (o que faz, como funciona, benefícios, ferramentas)
 - [ ] NASA Data (FIRMS MODIS C6.1, VIIRS S-NPP e NOAA-20 375 m)
-- [ ] Space Agency Partner & Other Data (INPE, ecorregiões, bibliotecas)
+- [ ] Space Agency Partner & Other Data (INPE se V1, OpenStreetMap, bibliotecas)
 - [ ] Use of Artificial Intelligence (de `docs/AI_USAGE.md`)
+
+## Conteúdo (padrão Twisters, D20–D21)
+- [ ] Summary abre com a pergunta da persona e diz quem usa
+- [ ] Nenhuma palavra "forecast/prediction" no texto (usar "historical probability", "compared with the historical median")
+- [ ] Toda cifra de impacto (ex.: perdas no agro) com fonte, ano e link
+- [ ] Use of AI por ferramenta e por finalidade
 
 ## Projeto
 - [ ] App no ar e funcionando no celular
@@ -31,6 +37,6 @@ Revisar com 2 pessoas. Tudo em inglês.
 
 ## Envio
 - [ ] Termos aceitos · "Confirm All Work is Original" marcado
-- [ ] "Submit for Judging" clicado antes das 23:59 (alvo 20:00)
+- [ ] "Submit for Judging" clicado antes das 23:59 (alvo 21:00)
 - [ ] Banner de confirmação visto · print salvo
 - [ ] Não mexer no deploy publicado depois do envio (julgamento até jan/2027)

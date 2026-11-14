@@ -2,7 +2,7 @@
 
 **NASA Space Apps Challenge 2026 · Challenge: Harmonization of MODIS and VIIRS Hot Spots · Local event: São Paulo, Brazil**
 
-> On November 2, 2026, the S-NPP satellite stopped observing. Our hotspot record survived.
+> 25 years (Nov 2000 – Dec 2025), 4 satellites, one consistent hotspot record.
 
 Fire Almanac harmonizes 25 years of NASA FIRMS active-fire hotspots from four satellites (Terra and Aqua MODIS, S-NPP and NOAA-20 VIIRS) into one consistent series, so the sensor of origin no longer matters. A static web app turns that series into a burning-activity calendar for any area the user draws.
 
@@ -14,7 +14,7 @@ Fire Almanac harmonizes 25 years of NASA FIRMS active-fire hotspots from four sa
 
 ## How the harmonization works (summary)
 1. Both sensors aggregated on a common ~2 km grid per overpass (removes the pixel-size effect).
-2. Fire Radiative Power threshold by biome × season × day/night (removes the sensitivity effect).
+2. Fire Radiative Power threshold by season × day/night (removes the sensitivity effect).
 3. Residual calibrated per cell × month on overlap years; competing methods (ratio, physical FRP, gradient boosting) are chosen by out-of-sample validation.
 4. Homogeneity test battery (Pettitt, Kolmogorov–Smirnov, spatial footprint, seasonality) at every satellite switch.
 

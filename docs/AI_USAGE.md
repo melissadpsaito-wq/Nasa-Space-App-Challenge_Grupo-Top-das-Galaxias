@@ -20,6 +20,8 @@ Exigência do Space Apps: declarar onde e como a IA foi usada; imagem/vídeo ger
 | 14/11 | Claude (Anthropic) | Ciência 3.1 | Fechamento do contrato: remoção do bioma (D33), `winner()`, `passes_reader()`, `check_config()` e novos testes | Murilo |
 | 14/11 | Claude (Anthropic) | Ciência 3.2 | Rascunho de `pipeline/bridges/m1.py`, `pipeline/bridges/check_method.py`, `tests/test_m1.py` e M1 em `tests/test_bridge_contract.py` (D32 com prior global por mês, D33); resumo `CIENCIA-3.2-M1.md` | Melissa |
 | 14/11 | Claude (Anthropic) | Dados 2.2 | Rascunho de `pipeline/grid.py` (grade 0,02° por passagem + H3 res 4 → `grid2km_pass`, `agg_monthly`) e `tests/test_grid.py`; medida de ΣFRP no `check_method` | Murilo |
+| 14/11 | Claude (Anthropic) | Ciência 3.2 | `m1.py --eval`, `m1_preview.py` (série dos 4 satélites), `check_extra.py` (fogos extras do VIIRS) e testes; leitura dos resultados Brasil; D34 e revisão de R05/D30 propostas | Murilo |
+| 14/11 | Claude (Anthropic) | Governança | Pacote v2.6: unificação do PR `ciencia/m1` com a governança v2.4; atualização de DECISIONS, RISKS, METHOD, STATUS, ROADMAP, GUIA-TECNICO e docs das etapas | Murilo |
 <!-- Se alguém usar GitHub Copilot ou outra IA, adicionar uma linha aqui. -->
 
 ## Texto para o formulário (rascunho)

@@ -11,11 +11,10 @@
 | Fonte | Produto | Período | Origem | Versão (campo `version`) | Baixado em | Por |
 |---|---|---|---|---|---|---|
 | MODIS Terra/Aqua | FIRMS resumo anual por país (C6.1) | 2000–2025 | firms.modaps.eosdis.nasa.gov/country | 6.2 (2000) · 61.03 (2024–25) [confirmar significado] | 13/11/2026 | Dados |
-| VIIRS S-NPP 375 m | FIRMS resumo anual (`viirs-snpp`) | 2012–2025 | idem | 2 | 2025: 13/11/2026 | Dados |
-| VIIRS NOAA-20 375 m | FIRMS resumo anual (`viirs-jpss1`) | 2018–2025 | idem | 2 | 2025: 13/11/2026 | Dados |
-| VIIRS S-NPP / NOAA-20 2026 | Archive Download ou API | jan–nov/2026 | FIRMS | — | — | Capitão |
-| NRT NOAA-20 | API FIRMS area/csv | últimos 7 dias | FIRMS API (GitHub Action) | NRT | contínuo | Dados |
-| Ecorregiões | RESOLVE Ecoregions 2017 | — | — | — | — | Dados |
+| VIIRS S-NPP 375 m | FIRMS resumo anual (`viirs-snpp`) | 2012–2025 | idem | 2 | ZIPs `all_countries` 2012–2025 ✅ (até 14/11/2026) | Dados |
+| VIIRS NOAA-20 375 m | FIRMS resumo anual (`viirs-jpss1`) | 2018–2025 | idem | 2 | ZIPs `all_countries` 2018–2025 ✅ (até 14/11/2026) | Dados |
+| ~~2026, NRT, RESOLVE~~ | fora por D33 | — | — | — | — | — |
+| Escopo geográfico | Brasil inteiro (D28); mundo como evolução | — | — | — | — | — |
 | Referência externa | INPE BDQueimadas (V1) | mensal | INPE | — | — | Capitão |
 
 ## Fluxo (linhagem)
@@ -30,6 +29,15 @@
 | Excluir 16/08–02/09/2020 das métricas das pontes com Aqua | Guia MODIS C6 §7.2.4 |
 | Agregação temporal ≥ 8 dias | Guia MODIS C6 §7.1.1 |
 | Teste de conservação: soma de focos agregados = linhas filtradas | Interno |
+
+## Resultado dos filtros (2.1, sáb 14/11)
+| Recorte | parse | date | type ≠ 0 | conf baixa | Mantido |
+|---|---|---|---|---|---|
+| Brasil 2025 · MODIS | 0% | 0% | 1,7–2,6% | 4,0–4,6% | ~94% |
+| Brasil 2025 · VIIRS | 0% | 0% | ~1,9% | 9,8–10,7% | ~88–89% |
+| Pantanal 2000–25 · MODIS | 0% | 0% | 0,07–0,13% | 5,5–6,2% | ~94% |
+| Pantanal 2000–25 · VIIRS | 0% | 0% | 0,5–0,7% | 8,5–8,7% | ~91% |
+Conferência: Brasil 2025 reproduz `08-fatos-dados` com 0,00% de diferença. Teste de conservação Parquet = log ✅. Log completo: `data/clean*/filter_log.csv`.
 
 ## Limitações declaradas
 - Arquivos de focos não informam nuvem nem falta de observação.

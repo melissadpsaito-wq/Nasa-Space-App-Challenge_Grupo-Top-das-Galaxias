@@ -1,4 +1,5 @@
-# Status dos checkpoints
+# Status dos checkpoints (atualizado 14/11 19:31 · espelho no Projeto: `claude/03-status.md`)
+
 
 Preencher em cada checkpoint (Capitão). Uma seção por checkpoint.
 
@@ -44,7 +45,7 @@ D21, D27 (14:22) e D28 (14:40) decididas. Escopo geográfico: Brasil inteiro; do
 ## Sáb 14/11 15:13 · Dados 2.1 Ingest + clean concluído
 | Item | Situação |
 |---|---|
-| Código | `pipeline/ingest.py`, `pipeline/clean.py`, `tests/test_clean.py` · commit `2e66d2e` (branch `dados/ingest-clean`) · PR pendente |
+| Código | `pipeline/ingest.py`, `pipeline/clean.py`, `tests/test_clean.py` · commit `2e66d2e` · no `main` ✅ |
 | Conferência Brasil 2025 | 0,00% de diferença vs `08-fatos-dados` nos 4 sensores |
 | Piloto Pantanal 2000–2025 | 2.028.235 focos limpos (Terra 200.914 · Aqua 251.978 · S-NPP 913.045 · N20 662.298) em `data/clean_pantanal/` |
 | Filtros | parse 0% · date 0% · type 0,1–2,6% · conf MODIS 4–6% / VIIRS 9–11% |
@@ -54,13 +55,39 @@ D21, D27 (14:22) e D28 (14:40) decididas. Escopo geográfico: Brasil inteiro; do
 Detalhes: `docs/DADOS-2.1-INGEST-CLEAN.md` · Decisões propostas: D29, D30 · Riscos atualizados: R05
 
 ### Sáb 16:10 · D33 decidida
-Sem bioma; análise nov/2000 → dez/2025 com Terra, Aqua, S-NPP e NOAA-20 em todos os anos. Saem: RESOLVE, `cell_biome`, geopandas, 2026, NRT. Dados 2.1 já cobre isso (ZIPs 2000–2025 conferidos). Próximo: Dados 2.2 grade + H3.
+Sem bioma; análise nov/2000 → dez/2025 com Terra, Aqua, S-NPP e NOAA-20 em todos os anos. Saem: RESOLVE, `cell_biome`, geopandas, 2026, NRT.
 
-### Sáb 16:30 · Ciência 3.1 contrato final
+---
+## Sáb 14/11 16:30 · Ciência 3.1 contrato no `main`
 | Item | Situação |
 |---|---|
-| Arquivos | `config/sensors.yaml` v3 · `pipeline/bridges/base.py` · `tests/test_bridge_contract.py` · `docs/CONTRATO-CIENCIA.md` |
-| Testes | 9/9 (passes_reader exige pyarrow) |
-| Mudou | sem `cell_biome` (D33) · `winner()` (D31) · `passes_reader()` (M2) · `check_config()` |
-| Pendente Capitão | D30 (fit Aqua→S-NPP 2012–2019) · D31 · D32 |
-| Próximo | Melissa: M1 (§3.2) · Samuel: `validate/run.py` com Identity e GlobalFactor |
+| Merge | PR #2 → `main` (`e43f564`; commit `5c22053`) ✅ |
+| Arquivos | `config/sensors.yaml` v3 · `pipeline/bridges/base.py` · `tests/test_bridge_contract.py` · `docs/CONTRATO-CIENCIA.md` · `requirements.txt` (+pyyaml, pyarrow) |
+| Testes | 9/9 na máquina do Murilo |
+| Dados 2.1 | `2e66d2e` também já está no `main` |
+| Pendente | Pacote de governança v2.4 fora do `main` (DECISIONS sem D17–D33, ROADMAP/STATUS antigos, sem PLANO-48H/GUIA-TECNICO) · Capitão decidir D30, D31, D32 |
+| Próximo | Melissa: M1 (§3.2) · Samuel: `validate/run.py` (Identity, GlobalFactor) · Murilo: Dados 2.2 grade + H3 |
+
+---
+## Sáb 14/11 17:53 · Dados 2.2 + 2.3 e Ciência 3.2 (M1) concluídos — CP2 adiantado
+| Item | Situação |
+|---|---|
+| Código | PR `ciencia/m1` aberto (commits `ea41bc5` … `f30b43d`): `pipeline/grid.py` · `pipeline/bridges/{m1,check_method,m1_preview,check_extra}.py` · testes `test_m1` (12), `test_grid` (3+1), M1 no contrato (λ 0/5/20/50) — todos passam na máquina do Murilo |
+| `check_method` (Brasil 2025) | 5,42 → 3,58 (0,01°) → 3,45 (0,02°) → 1,00 com τ = 9,4 MW ✅ igual ao METHOD.md; 08-fatos corrigido (dizia 3,45 / 2,77) |
+| ΣFRP | S-NPP/Aqua 1,17 (bruto) · 0,76 (Σ frp_max) · varia mais entre meses que a contagem (CV 16% × 12%) → unidade principal segue contagem; D29: somar todos os pixels |
+| 2.2 Pantanal | 1 s · conservação OK · 199 células H3 |
+| 2.3 Brasil 2000–2025 | ingest ~1 min (2025 = 0,00%) · grade 19 s · conservação OK · ~4.200 células · S-NPP/Aqua na grade 3,96 (2012–19) → 3,98 (2020–21) |
+| M1 conferência (Brasil) | consistency teste 2020–21: bruto 1,10 · taxa única 0,69 · **M1 0,45** (LOYO 0,42); Σpred/ΣB 0,99; λ 5 ≈ 20 |
+| Prévia 4 satélites | Aqua→S-NPP ±4% (2012–23) · N20→S-NPP ±3% · Aqua 2024–25 +15–23% (deriva) · Terra pós-2011 +15–60% |
+Detalhes: `claude/31-ciencia-3.2-m1.md`, `claude/32-dados-2.2-2.3-grade-h3.md` · Decisões: **D34 decidida (18:07)** · Riscos: **R05 atualizado** · D30 com motivo revisto
+
+### Sáb 19:26 · Achado: de onde vêm os fogos extras do VIIRS (`check_extra`, Brasil 2025)
+No mês: 65% a ≤ 10 km de um fogo MODIS · 26% a 10–50 km · **9% invisíveis ao MODIS** (1,6 MW, 77% noturnos; pesam 0,30 dos 3,45). No mesmo dia só 44,5% dos fogos diurnos do Aqua têm par no S-NPP (faixa/horário) → comparar por mês, como o M1 faz.
+
+### Sáb 19:31 · Próximo (ver `claude/33-briefing-proximos-passos.md`)
+| Pessoa | Próximo |
+|---|---|
+| Murilo | Merge PR `ciencia/m1` + governança v2.4 · 2.4 export `harm_monthly.json` Pantanal (M1 provisório) → Luana 23:45 · `sensors4.json` · decidir D29 (texto), D30–D32 |
+| Melissa | 3.3 M2 (`pipeline/bridges/m2.py`): τ por trimestre × dia/noite em 2012–2019; meta bater M1 (0,447 / 0,418) |
+| Samuel | `validate/run.py` → `validation.json` (bruto × global × M1 × M2) com o `agg_monthly` Brasil |
+| Luana | App com JSON falso → real às 23:45; unidade "escala S-NPP"; gráfico D34 |

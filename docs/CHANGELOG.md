@@ -1,5 +1,14 @@
 # Changelog da governança
 
+## v2.6 · sáb 14/11 19:40
+- Incorpora o PR `ciencia/m1`: `pipeline/grid.py` (2.2/2.3), `pipeline/bridges/{m1,check_method,m1_preview,check_extra}.py`, `tests/{test_m1,test_grid}.py`, M1 no `test_bridge_contract.py`.
+- Base de código = `main` (`e43f564`, contrato 3.1 final YAML v3) + `ciencia/m1`; documentos de governança da v2.4/v2.5 mantidos.
+- Novos docs: `CIENCIA-3.2-M1.md`, `DADOS-2.2-2.3-GRADE-H3.md`, `BRIEFING-PROXIMOS-PASSOS.md`. `DADOS-2.1` com revisão da §6 (deriva).
+- DECISIONS: **D34** decidida (gráfico dos 4 satélites com divergências destacadas); notas em D29 (frp_sum = soma de todos os pixels) e D30 (motivo revisto). RISKS: R05 atualizado (deriva do Aqua em 2024–25, não em 2020).
+- METHOD: τ medido (9,4 MW), janelas de ajuste corrigidas (Aqua→S-NPP 2012–2019), resultados do M1, ΣFRP, fogos extras do VIIRS, limites declarados.
+- DATA_DICTIONARY: `frp_sum` em §2 e §5. Makefile: `grid --area $(AREA)`. ROADMAP, GUIA-TECNICO, PLANO-48H, pipeline/README: status. STATUS = espelho do Projeto (`claude/03`). AI_USAGE: linhas de 14/11.
+- PDF do Guia segue v2.4 (sem regenerar); os .md são a versão viva.
+
 ## v2.5 · sáb 14/11 16:30
 - Ciência 3.1 final (YAML v3): `Context` sem `cell_biome` (D33); `base.winner()` lê λ/método de `validation.json` (D31); `base.passes_reader()` para o M2; `check_config()` valida o YAML no load.
 - `tests/test_bridge_contract.py`: 9 testes (timeline contínua, fit fora da sobreposição, sem bioma, `winner`, `passes_reader`).

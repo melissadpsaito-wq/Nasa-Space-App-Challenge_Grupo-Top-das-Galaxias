@@ -3,7 +3,7 @@
 ## Branches
 - `main`: sempre funcionando; é o que o deploy publica.
 - `dados/<tema>`, `front/<tema>`, `ciencia/<tema>`: uma branch por tarefa.
-- A partir de dom 13:00 (congelamento): só branches `fix/<tema>`.
+- A partir de dom 15:00 (congelamento, CP7 · D23): só branches `fix/<tema>`.
 
 ## Commits
 Formato: `<área>: <o que mudou>` — ex.: `dados: agrega focos em H3 res 4`, `front: calendário com cividis`.
