@@ -135,5 +135,7 @@ def test_check_method_decomposition(cfg):
     assert r["grid"][0.02]["tau"] == pytest.approx(50.0)
     assert r["grid"][0.02]["ratio_after_tau"] == pytest.approx(1.0)
     assert set(r["strata"].season) == {"JJA"}
+    assert r["frp_raw"] == pytest.approx((6 * 50 + 4 * 2) / 70)                               # ΣFRP bruto
+    assert r["frp_grid"] == pytest.approx((2 * 50 + 4 * 2) / 70)                              # Σ frp_max 0,02°
     assert len(collapse(snpp.assign(ts=[ts] * 5 + [ts + pd.Timedelta("1h")] * 5), 0.02)) == 7  # célula B em 2 passagens conta 2×
     assert tau_equal_counts([1, 5, 3], 2) == 3

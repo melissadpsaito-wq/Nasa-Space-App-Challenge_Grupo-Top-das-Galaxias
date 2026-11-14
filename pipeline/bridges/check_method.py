@@ -58,6 +58,13 @@ def decompose(aqua: pd.DataFrame, snpp: pd.DataFrame, cfg: dict | None = None) -
                 rows.append({"season": s, "daynight": dn, "n_aqua": na, "n_snpp": len(sub),
                              "ratio": len(sub) / max(na, 1), "tau": tau_equal_counts(sub.frp_max, na)})
             res["strata"] = pd.DataFrame(rows)
+        if g == 0.02:                                                                   # D29: Σ frp_max das células 2 km
+            res["frp_grid"] = cs.frp_max.sum() / max(ca.frp_max.sum(), 1e-9)
+            by_month["frp_grid_0.02"] = cs.groupby(month(cs)).frp_max.sum() / ca.groupby(month(ca)).frp_max.sum()
+            res["frp_daynight"] = (cs.groupby("daynight").frp_max.sum() / ca.groupby("daynight").frp_max.sum()).to_dict()
+    # ΣFRP bruto (sem grade): a energia de um fogo dividida em vários pixels soma de volta
+    res["frp_raw"] = snpp.frp.sum() / max(aqua.frp.sum(), 1e-9)
+    by_month["frp_raw"] = snpp.groupby(month(snpp)).frp.sum() / aqua.groupby(month(aqua)).frp.sum()
     res["by_month"] = by_month
     return res
 
@@ -91,7 +98,9 @@ def main(argv=None) -> None:
     label = f"+ limiar FRP τ = {g2['tau']:.1f} MW (0,02°)"
     print(f"{label:<34}{g2['ratio_after_tau']:>18.2f}{'≈1,0':>10}")
     print(f"(τ na grade 0,01° = {r['grid'][0.01]['tau']:.1f} MW · esperado ~{ref.get('tau', '–')} MW)\n")
-    print("Razão por mês:\n" + r["by_month"].round(2).to_string())
+    dn = " · ".join(f"{k} {v:.2f}" for k, v in r["frp_daynight"].items())
+    print(f"ΣFRP S-NPP/Aqua: bruto {r['frp_raw']:.2f} · Σ frp_max grade 0,02° {r['frp_grid']:.2f} (D29) · por turno: {dn}\n")
+    print("Razão por mês (contagens e ΣFRP):\n" + r["by_month"].round(2).to_string())
     if "strata" in r:
         print("\nPrévia §3.3 — τ por trimestre × dia/noite (grade 0,02°):\n" + r["strata"].round(2).to_string(index=False))
     if ref:
