@@ -1,0 +1,12 @@
+# Python 3.11 — pipeline (ver claude/07-design-tecnico)
+pandas
+pyarrow
+duckdb
+numpy
+h3>=4
+geopandas
+scikit-learn
+scipy
+pyyaml
+python-dotenv
+pytest

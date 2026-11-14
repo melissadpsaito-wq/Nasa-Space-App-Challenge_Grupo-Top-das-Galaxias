@@ -1,0 +1,9 @@
+# Trocar @usuario-* pelos usuários do GitHub e descomentar no kickoff.
+# Ownership conforme Guia 48h / D16.
+# /pipeline/            @usuario-murilo
+# /pipeline/bridges/    @usuario-melissa
+# /pipeline/validate/   @usuario-samuel
+# /pipeline/analytics/  @usuario-samuel
+# /config/              @usuario-melissa
+# /app/                 @usuario-luana
+# /docs/                @usuario-murilo

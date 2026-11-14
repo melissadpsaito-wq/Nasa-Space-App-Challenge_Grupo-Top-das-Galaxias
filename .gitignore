@@ -1,0 +1,20 @@
+# segredos
+.env
+*.key
+# dados brutos e intermediários (ficam no Drive)
+zips/
+data/raw/
+data/clean/
+data/interim/
+*.zip
+# python
+__pycache__/
+*.pyc
+.venv/
+.ipynb_checkpoints/
+# node
+node_modules/
+app/dist/
+# sistema
+.DS_Store
+Thumbs.db
