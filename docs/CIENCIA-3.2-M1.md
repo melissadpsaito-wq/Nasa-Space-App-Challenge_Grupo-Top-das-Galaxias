@@ -84,17 +84,42 @@ M1 (`--lam 20`, ajuste 2012–2019):
 | Fator global único no mesmo teste | 0,932 |
 Leitura: no teste, ΣB/ΣA = 3,64 (sem ago–set/2020) contra 3,40 no ajuste. A razão sobe em anos/meses de muito fogo e o M1 (linear em A) não acompanha. Na soma, o M1 fica atrás do fator global; a nota oficial (mediana do erro por célula-mês, LOYO) é do Samuel e decide o CP3 (`beats_global`).
 
-## 6. Pendências
+## 6. Resultado — Brasil 2000–2025 (sáb 17:53) ✅ · resultado principal
+| Etapa | Resultado |
+|---|---|
+| Ingest Brasil (48 arquivos, ~40 M linhas) | 2025 = 08-fatos (0,00% nos 4 sensores); filtros removem Terra 7,6% · Aqua 5,4% · S-NPP 10,0% · N20 10,3% |
+| Grade + H3 (19 s) | conservação OK; ~3.700–4.200 células H3 por ano; pixels por fogo: MODIS 1,25–1,27 · VIIRS 2,02 |
+| S-NPP/Aqua na grade | 2012–2019 **3,96** · 2020–2021 **3,98** · 2022–2025 3,58 · 2025 = **3,45** (igual ao `check_method` ✔) |
+
+Conferência M1 (`python -m pipeline.bridges.m1 --eval`, célula-mês ativas):
+| Método | Teste 2020–2021: consistency / r2_log / bias / Σpred÷ΣB | LOYO 2012–2019: consistency / r2_log |
+|---|---|---|
+| Bruto | 1,099 / −0,11 / −1,10 / 0,26 | 1,099 / 0,01 |
+| Taxa única | 0,693 / 0,18 / −0,58 / 1,01 | 0,693 / 0,31 |
+| M1 λ = 0 | 0,448 / 0,65 / −0,13 / 0,99 | 0,421 / 0,71 |
+| **M1 λ = 5** | **0,447 / 0,66** / −0,10 / 0,99 | 0,419 / **0,71** |
+| **M1 λ = 20** | 0,448 / 0,64 / **−0,09** / 0,99 | **0,418** / 0,70 |
+| M1 λ = 50 | 0,450 / 0,63 / −0,10 / 0,98 | 0,420 / 0,69 |
+Leitura:
+- M1 ganha do bruto e da taxa única nos dois testes → cumpre a regra do CP3 (`beats_raw`, `beats_global`), pendente da nota oficial do Samuel.
+- λ quase não muda o resultado (0,418–0,450); 5 e 20 empatam. A escolha é do `validation.json`.
+- Erro típico por célula-mês: e^0,45 ≈ fator 1,57 (muita célula-mês com poucos focos → ruído de contagem). No total do Brasil o M1 acerta 99% (0,986 no teste).
+- A taxa única erra o mediano para baixo (bias −0,58) porque prevê 0 onde o Aqua viu 0; o termo aditivo do M1 resolve isso.
+- O sub-registro de 10% do Pantanal (0,904) era local: no Brasil o teste fica em 0,986.
+- Sem degrau na grade em 2020 (3,96 → 3,98) → a deriva do Aqua vista no bruto (R05) não aparece depois da peneira. D30 continua útil como teste fora do tempo, mas a justificativa muda (Capitão).
+- Bruto com consistency = ln 3 (1,099): a célula-mês mediana tem A = 0 e B ≈ 2.
+
+## 7. Pendências
 | Item | Dono |
 |---|---|
-| Sensibilidade a λ (5, 50) no Pantanal | Melissa |
-| Samuel: rodar LOYO + teste com M1 e baselines → `validation.json` | Samuel |
+| PR `ciencia/m1` → `main` (inclui Dados 2.2 `grid.py`) | Murilo |
+| Samuel: `validation.json` oficial com M1 (usar `data/interim/agg_monthly.parquet` do Brasil) | Samuel |
 | Rever D30/R05 com o achado da grade | Capitão |
 | Aprovar D30, D31, D32 (D32 já com prior global por D33) | Capitão |
 | λ vencedor via `validation.json` (CP3, 23:30) | Samuel |
 
-## 7. Leitura esperada
+## 8. Leitura esperada
 k(c,M) de meses com pouco fogo sai abaixo do k global (os meses com A = 0 vão para o aditivo). Com λ = 0 o total do ajuste é conservado. No sintético com deriva de +20% em 2020+, o teste 2020–2021 fica em Σpred/ΣB ≈ 0,85 — é a assinatura que esperamos ver no Pantanal se R05 for real (Aqua 5,94 → 7,15).
 
-## 8. Diferenças em relação ao rascunho das 15:50
+## 9. Diferenças em relação ao rascunho das 15:50
 Bioma removido (D33): k_bioma/a_bioma → k_global(M)/a_global(M); sem `cell_biome`. Coluna `add` → `add_term` (`add` colide com `DataFrame.add`). Novos: CLI usa `winner()` (R8), `--agg` para o arquivo do Pantanal, teste de deriva e teste do `check_method`.

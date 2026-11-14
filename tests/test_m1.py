@@ -156,3 +156,35 @@ def test_evaluate_ranks_methods(cfg):
         assert r[(split, "M1 λ=20")] < r[(split, "global")] < r[(split, "raw")]
     s = score(np.array([0.0, 9.0]), np.array([0.0, 9.0]))
     assert s["consistency"] == 0 and s["r2_log"] == 1 and s["sum_ratio"] == 1
+
+
+def test_check_extra_distances(cfg):
+    from pipeline.bridges.check_extra import classify, summarize
+    t = pd.Timestamp("2025-08-10 16:30")
+    aqua = pd.DataFrame({"ts": [t], "latitude": [-10.0], "longitude": [-50.0], "frp": [40.0], "daynight": ["D"]})
+    # S-NPP: mesmo fogo (0 km), vizinho (~5,5 km), isolado (~22 km), muito isolado (~111 km), e noite sem Aqua
+    snpp = pd.DataFrame({"ts": [t, t, t, t, t + pd.Timedelta("12h")],
+                         "latitude": [-10.0, -10.05, -10.2, -11.0, -10.0], "longitude": [-50.0] * 5,
+                         "frp": [30.0, 5.0, 3.0, 2.0, 4.0], "daynight": ["D", "D", "D", "D", "N"]})
+    f = classify(aqua, snpp).sort_values(["daynight", "latitude"], ascending=[True, False]).reset_index(drop=True)
+    assert f.dist_km.iloc[0] == pytest.approx(0, abs=0.01)
+    assert f.dist_km.iloc[1] == pytest.approx(5.56, abs=0.05)
+    assert list(f.classe.astype(str)) == ["mesmo fogo (≤2 km)", "vizinhança (2–10 km)", "isolado (10–50 km)",
+                                          "muito isolado (>50 km)", "muito isolado (>50 km)"]
+    r = summarize(f, 1, cfg)
+    assert r["classes"].fogos.sum() == 5 and r["classes"].por_fogo_aqua.sum() == pytest.approx(5)
+
+
+def test_check_extra_month_and_reverse(cfg):
+    from pipeline.bridges.check_extra import classify, reverse_match
+    t1, t2 = pd.Timestamp("2025-08-10 16:30"), pd.Timestamp("2025-08-20 16:30")
+    aqua = pd.DataFrame({"ts": [t1, t2], "latitude": [-10.0, -12.0], "longitude": [-50.0, -50.0],
+                         "frp": [40.0, 30.0], "daynight": ["D", "D"]})
+    snpp = pd.DataFrame({"ts": [t1, t1], "latitude": [-10.0, -12.0], "longitude": [-50.0, -50.0],
+                         "frp": [30.0, 3.0], "daynight": ["D", "D"]})   # 2º fogo: Aqua só viu 10 dias depois
+    day = classify(aqua, snpp, "day").sort_values("latitude").dist_km.to_numpy()
+    month = classify(aqua, snpp, "month").sort_values("latitude").dist_km.to_numpy()
+    assert day[0] > 200 and month[0] == pytest.approx(0, abs=0.01)    # mesmo lugar, outro dia do mês
+    r = reverse_match(aqua, snpp, "day")
+    assert r.loc["total", "pct_ate_2km"] == pytest.approx(50)         # Aqua de 20/ago sem S-NPP no dia
+    assert reverse_match(aqua, snpp, "month").loc["total", "pct_ate_2km"] == pytest.approx(100)
