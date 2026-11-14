@@ -19,6 +19,7 @@ Exigência do Space Apps: declarar onde e como a IA foi usada; imagem/vídeo ger
 | 14/11 | Claude (Anthropic) | Governança | D33 (sem bioma, 2000–2025 com 4 sensores): atualização de YAML, contratos, método, guia, plano e PDF v2.4 | Murilo |
 | 14/11 | Claude (Anthropic) | Ciência 3.1 | Fechamento do contrato: remoção do bioma (D33), `winner()`, `passes_reader()`, `check_config()` e novos testes | Murilo |
 | 14/11 | Claude (Anthropic) | Ciência 3.2 | Rascunho de `pipeline/bridges/m1.py`, `pipeline/bridges/check_method.py`, `tests/test_m1.py` e M1 em `tests/test_bridge_contract.py` (D32 com prior global por mês, D33); resumo `CIENCIA-3.2-M1.md` | Melissa |
+| 14/11 | Claude (Anthropic) | Dados 2.2 | Rascunho de `pipeline/grid.py` (grade 0,02° por passagem + H3 res 4 → `grid2km_pass`, `agg_monthly`) e `tests/test_grid.py`; medida de ΣFRP no `check_method` | Murilo |
 <!-- Se alguém usar GitHub Copilot ou outra IA, adicionar uma linha aqui. -->
 
 ## Texto para o formulário (rascunho)

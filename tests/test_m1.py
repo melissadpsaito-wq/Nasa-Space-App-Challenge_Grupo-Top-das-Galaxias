@@ -139,3 +139,20 @@ def test_check_method_decomposition(cfg):
     assert r["frp_grid"] == pytest.approx((2 * 50 + 4 * 2) / 70)                              # Σ frp_max 0,02°
     assert len(collapse(snpp.assign(ts=[ts] * 5 + [ts + pd.Timedelta("1h")] * 5), 0.02)) == 7  # célula B em 2 passagens conta 2×
     assert tau_equal_counts([1, 5, 3], 2) == 3
+
+
+def test_evaluate_ranks_methods(cfg):
+    """Sintético: B = k(M)·A com k sazonal → M1 ganha da taxa única, que ganha do bruto."""
+    from pipeline.bridges.m1 import evaluate, score
+    rng = np.random.default_rng(3)
+    ra, rb = [], []
+    for c in [f"c{i}" for i in range(20)]:
+        for ym in base.months_of(range(2012, 2022)):
+            k = 2 + 2 * (ym % 100 in (8, 9, 10))
+            a_ = rng.poisson(8)
+            ra.append((c, ym, a_)); rb.append((c, ym, rng.poisson(k * a_ + 0.5)))
+    r = evaluate(agg(ra), agg(rb), cfg, "aqua_snpp", [0, 20]).set_index(["split", "método"]).consistency
+    for split in ("teste 2020–2021", "LOYO 2012–2019"):
+        assert r[(split, "M1 λ=20")] < r[(split, "global")] < r[(split, "raw")]
+    s = score(np.array([0.0, 9.0]), np.array([0.0, 9.0]))
+    assert s["consistency"] == 0 and s["r2_log"] == 1 and s["sum_ratio"] == 1

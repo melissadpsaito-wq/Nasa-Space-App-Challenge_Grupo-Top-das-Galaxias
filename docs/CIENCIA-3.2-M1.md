@@ -37,16 +37,64 @@ python -m pipeline.bridges.m1 --bridge aqua_snpp --lam 20 --agg <agg_monthly do 
 1. `check_method` (pedido pelo Guia antes do M1): esperado bruto 5,42 · 0,02° ≈ 3,45 · com τ → ≈ 1,0. Imprime também razão por mês e prévia do τ por trimestre × dia/noite (insumo do §3.3). Se não bater: rever definição de passagem (`ts` + `daynight`) com Murilo.
 2. `m1`: sem `--lam` usa o vencedor de `validation.json`; antes do CP3 sai com erro (λ = 20 só para conferência). Grava `data/interim/m1_params_<ponte>_lam<λ>.parquet` e mostra k_global(M), a_global(M) e Σpred/ΣB no ajuste e no teste (a nota oficial é do Samuel).
 
-## 4. Pendências
+## 4. Resultado — `check_method` Brasil 2025 (sáb 16:54) ✅
+| Etapa | Razão S-NPP/Aqua | METHOD.md |
+|---|---|---|
+| Bruto (140.750 Aqua · 762.985 S-NPP) | 5,42 | 5,42 |
+| Grade 0,01° por passagem | 3,58 | 3,58 |
+| Grade 0,02° por passagem | 3,45 | 3,45 |
+| + limiar de FRP τ = 9,4 MW (0,02°) | 1,00 | ≈ 1,0 |
+τ na grade 0,01° = 9,8 MW. Razão bruta por mês 3,53–6,43 = `08-fatos`. Definição de passagem (`ts` + `daynight`) confirmada.
+
+Prévia do §3.3 (grade 0,02°, 8 estratos):
+| Estrato | Aqua | S-NPP | Razão | τ (MW) |
+|---|---|---|---|---|
+| DJF D / N | 12.415 / 373 | 33.831 / 7.198 | 2,73 / 19,30 | 8,2 / 6,4 |
+| MAM D / N | 6.634 / 417 | 19.510 / 7.055 | 2,94 / 16,92 | 8,1 / 6,2 |
+| JJA D / N | 26.052 / 2.507 | 67.558 / 30.513 | 2,59 / 12,17 | 9,2 / 6,1 |
+| SON D / N | 59.495 / 5.189 | 160.268 / 64.494 | 2,69 / 12,43 | 10,7 / 6,1 |
+Leitura: de dia sobra ~2,7× após a grade; à noite, 12–19× (o MODIS quase não vê fogo noturno fraco). τ noturno ~6 MW, diurno 8–11 MW. Estratificar dia/noite (D33) é necessário. Estratos noturnos de DJF e MAM têm < 420 focos Aqua: τ menos estável.
+
+ΣFRP S-NPP/Aqua (Brasil 2025): bruto 1,17 (meses 0,82–1,60, CV 16%) · Σ frp_max 0,02° 0,76 · dia 0,73 / noite 1,38. Contagem na grade varia menos (CV 12%) → unidade principal segue contagem (D03); ΣFRP = camada extra (D34, depois do CP3). D29: `frp_sum` = Σ FRP de todos os pixels.
+
+## 5. Resultado — grade 2.2 + M1 no Pantanal (sáb 17:45) ✅
+Grade (`python -m pipeline.grid --area pantanal`, 1 s): conservação OK nos 4 sensores × 26 anos; 199 células H3 res 4.
+| Sensor | Focos limpos | Células-passagem | Pixels por fogo |
+|---|---|---|---|
+| TERRA | 200.914 | 150.027 | 1,34 |
+| AQUA | 251.978 | 182.360 | 1,38 |
+| SNPP | 913.045 | 327.495 | 2,79 |
+| N20 | 662.298 | 225.249 | 2,94 |
+
+S-NPP/Aqua por período (Pantanal):
+| Período | Bruto | Grade 0,02° |
+|---|---|---|
+| 2012–2019 | 5,94 | 3,40 |
+| 2020–2021 | 7,17 | 3,41 |
+| 2022–2025 | ~7,1 | 3,28 |
+**Achado:** o degrau de +20% visto no bruto (R05, base da D30) some na grade. Em anos de fogo grande (2020, 2024) cada fogo vira mais pixels (VIIRS 3,0–3,6 por fogo × 1,9–2,7 nos outros anos). A "deriva" do bruto parece ser, em boa parte, efeito do tamanho dos fogos, não da órbita → rever D30/R05.
+
+M1 (`--lam 20`, ajuste 2012–2019):
+| Item | Valor |
+|---|---|
+| k_global(M) | 2,04 (mar) → 3,54 (out); maior na estação do fogo |
+| a_global(M) | 0,6 (abr) → 2,7 (out) focos/mês onde o Aqua viu 0 |
+| Ajuste: Σpred/ΣB | 0,993 |
+| Teste 2020–2021 (sem ago–set/2020): Σpred/ΣB | **0,904** |
+| Fator global único no mesmo teste | 0,932 |
+Leitura: no teste, ΣB/ΣA = 3,64 (sem ago–set/2020) contra 3,40 no ajuste. A razão sobe em anos/meses de muito fogo e o M1 (linear em A) não acompanha. Na soma, o M1 fica atrás do fator global; a nota oficial (mediana do erro por célula-mês, LOYO) é do Samuel e decide o CP3 (`beats_global`).
+
+## 6. Pendências
 | Item | Dono |
 |---|---|
-| `agg_monthly` do Pantanal (Dados 2.2) — sem ele o M1 só roda no sintético | Murilo |
-| Rodar `check_method` em Brasil 2025 e colar o resultado aqui | Melissa |
+| Sensibilidade a λ (5, 50) no Pantanal | Melissa |
+| Samuel: rodar LOYO + teste com M1 e baselines → `validation.json` | Samuel |
+| Rever D30/R05 com o achado da grade | Capitão |
 | Aprovar D30, D31, D32 (D32 já com prior global por D33) | Capitão |
 | λ vencedor via `validation.json` (CP3, 23:30) | Samuel |
 
-## 5. Leitura esperada
+## 7. Leitura esperada
 k(c,M) de meses com pouco fogo sai abaixo do k global (os meses com A = 0 vão para o aditivo). Com λ = 0 o total do ajuste é conservado. No sintético com deriva de +20% em 2020+, o teste 2020–2021 fica em Σpred/ΣB ≈ 0,85 — é a assinatura que esperamos ver no Pantanal se R05 for real (Aqua 5,94 → 7,15).
 
-## 6. Diferenças em relação ao rascunho das 15:50
+## 8. Diferenças em relação ao rascunho das 15:50
 Bioma removido (D33): k_bioma/a_bioma → k_global(M)/a_global(M); sem `cell_biome`. Coluna `add` → `add_term` (`add` colide com `DataFrame.add`). Novos: CLI usa `winner()` (R8), `--agg` para o arquivo do Pantanal, teste de deriva e teste do `check_method`.

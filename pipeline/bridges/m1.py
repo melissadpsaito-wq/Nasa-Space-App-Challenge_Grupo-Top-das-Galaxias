@@ -93,6 +93,79 @@ class M1:
                              "a_global": self.a_global_.to_numpy()})
 
 
+# ---------- conferência por célula-mês (a nota oficial é do Samuel: pipeline/validate) ----------
+class _Raw:
+    """Bruto: usa A como está (sem conversão)."""
+    name = "raw"
+
+    def __init__(self, ctx):
+        self.ctx = ctx
+
+    def fit(self, A, B, years):
+        self.cells_ = set(base.paired(A, B, years, self.ctx.cfg).cell)
+        return self
+
+    def transform(self, A, months=None):
+        d = base.densify(A[["cell", "ym", "n"]], self.cells_ | set(A.cell), base.default_months(A, months))
+        return pd.DataFrame({"cell": d.cell, "ym": d.ym.astype("int64"), "n_pred": d.n.astype(float)})
+
+
+class _Global(_Raw):
+    """Taxa única: ΣB/ΣA de todos os meses e células do ajuste."""
+    name = "global"
+
+    def fit(self, A, B, years):
+        t = base.paired(A, B, years, self.ctx.cfg)
+        self.cells_, self.k_ = set(t.cell), t.b.sum() / max(t.a.sum(), 1)
+        return self
+
+    def transform(self, A, months=None):
+        out = super().transform(A, months)
+        return out.assign(n_pred=out.n_pred * float(self.k_))
+
+
+def score(pred: np.ndarray, real: np.ndarray) -> dict:
+    """Mesma métrica do Guia §3.6: mediana |log((p+1)/(r+1))|, R² em log1p, viés mediano, Σpred/ΣB."""
+    pred, real = np.asarray(pred, float), np.asarray(real, float)
+    e = np.log((pred + 1) / (real + 1))
+    lp, lr = np.log1p(pred), np.log1p(real)
+    ss = ((lr - lr.mean()) ** 2).sum()
+    return {"consistency": float(np.median(np.abs(e))), "r2_log": float(1 - ((lr - lp) ** 2).sum() / ss) if ss else np.nan,
+            "bias": float(np.median(e)), "sum_ratio": float(pred.sum() / max(real.sum(), 1)), "n": int(len(e))}
+
+
+def _collect(model, A, B, fit_years, eval_years, cfg) -> pd.DataFrame:
+    """Ajusta em fit_years, prevê eval_years; devolve célula-mês ativas (A > 0 ou B > 0) com pred e real."""
+    model.fit(A, B, fit_years)
+    months = base.scoring_months(cfg, eval_years)
+    Ay, By = A[A.ym.isin(months)], B[B.ym.isin(months)]
+    pred = model.transform(Ay, months)
+    cells = set(pred.cell) | set(By.cell)
+    real = base.densify(By, cells, months).rename(columns={"n": "real"})
+    a = base.densify(Ay, cells, months).rename(columns={"n": "a"})
+    d = real.merge(a, on=["cell", "ym"]).merge(pred, on=["cell", "ym"], how="left").fillna({"n_pred": 0.0})
+    return d[(d.a > 0) | (d.real > 0)]
+
+
+def evaluate(A, B, cfg, bridge_id, lams) -> pd.DataFrame:
+    """Bruto × taxa única × M1(λ) em: teste (anos de test do YAML) e LOYO nos anos de ajuste."""
+    ctx = base.Context(cfg=cfg)
+    fy, ty = base.fit_years(cfg, bridge_id), base.test_years(cfg, bridge_id)
+    makers = {"raw": lambda: _Raw(ctx), "global": lambda: _Global(ctx),
+              **{f"M1 λ={lam:g}": (lambda lam=lam: M1(lam, ctx)) for lam in lams}}
+    rows = []
+    for name, make in makers.items():
+        if ty:
+            rows.append({"método": name, "split": f"teste {ty[0]}–{ty[-1]}", **score(*_xy(_collect(make(), A, B, fy, ty, cfg)))})
+        loyo = pd.concat([_collect(make(), A, B, [t for t in fy if t != y], [y], cfg) for y in fy])
+        rows.append({"método": name, "split": f"LOYO {fy[0]}–{fy[-1]}", **score(*_xy(loyo))})
+    return pd.DataFrame(rows)
+
+
+def _xy(d: pd.DataFrame):
+    return d.n_pred.to_numpy(), d.real.to_numpy()
+
+
 # ---------- CLI ----------
 def _load_agg(path: Path, sensors: list[str]) -> dict[str, pd.DataFrame]:
     df = pd.read_parquet(path, columns=["sensor", "cell", "ym", "n"])
@@ -107,10 +180,25 @@ def main(argv=None) -> None:
     ap.add_argument("--agg", help="agg_monthly (padrão: inputs.agg_monthly do YAML)")
     ap.add_argument("--out", default="data/interim")
     ap.add_argument("--config", default=str(base.CONFIG))
+    ap.add_argument("--eval", action="store_true", help="compara bruto × taxa única × M1 (λ de lambda_grid + 0) por célula-mês")
     a = ap.parse_args(argv)
 
     cfg = base.load_config(a.config)
     br = cfg["bridges_by_id"][a.bridge]
+    if a.eval:
+        agg_path = Path(a.agg or cfg["inputs"]["agg_monthly"])
+        data = _load_agg(agg_path, [br["from"], br["to"]])
+        lams = [0, *cfg["lambda_grid"]]
+        r = evaluate(data[br["from"]], data[br["to"]], cfg, a.bridge, lams)
+        pd.set_option("display.width", 160)
+        print(f"Conferência {a.bridge} · {agg_path} · célula-mês ativas (A > 0 ou B > 0); menor consistency = melhor\n")
+        for split, g in r.groupby("split", sort=False):
+            print(f"{split}:\n" + g.drop(columns="split").round(3).to_string(index=False) + "\n")
+        out = Path(a.out) / f"m1_eval_{a.bridge}.csv"
+        out.parent.mkdir(parents=True, exist_ok=True)
+        r.to_csv(out, index=False)
+        print(f"→ {out}  (conferência; a nota oficial é o validation.json do Samuel)")
+        return
     lam = a.lam
     if lam is None:
         w = base.winner(cfg, a.bridge)
