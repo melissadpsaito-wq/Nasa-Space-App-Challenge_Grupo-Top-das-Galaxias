@@ -1,0 +1,48 @@
+# config/sensors.yaml — contrato interno da Ciência (Guia 48h v2 §3.1). Dona: Melissa.
+# Mudança aqui = decisão nova em docs/DECISIONS.md. Lido por pipeline/bridges/base.py:load_config().
+version: 3   # 3.1 final: D33 (sem bioma) + D31 (λ via validation.json) · check_config() valida este arquivo
+reference: SNPP
+unit: "cell-pass detections, 0.02° grid, S-NPP scale"   # D03 · DATA_DICTIONARY §5
+
+grid:
+  pass_cell_deg: 0.02      # D13: grade comum ~2 km por passagem
+  frp_in_cell: max         # D26
+  h3_res: 4                # D04
+
+season: quarter            # D26
+seasons: {DJF: [12, 1, 2], MAM: [3, 4, 5], JJA: [6, 7, 8], SON: [9, 10, 11]}
+
+# Quem fornece cada mês da série final (DATA_DICTIONARY §8, D10, D11)
+timeline:
+  - {sensor: TERRA, from: 200011, to: 200206, low_conf: true}
+  - {sensor: AQUA,  from: 200207, to: 201201}
+  - {sensor: SNPP,  from: 201202, to: 202512}   # D33: série termina em dez/2025
+# D33: todos os sensores são harmonizados no período inteiro (2000–2025) para a prova de consistência
+analysis_period: [200011, 202512]
+sensor_years: {TERRA: [2000, 2025], AQUA: [2002, 2025], SNPP: [2012, 2025], N20: [2018, 2025]}
+strata: [season, daynight]   # D33: sem bioma
+
+# Pane do Aqua: meses tocados saem inteiros do ajuste e da nota (D31, proposta)
+exclude: [["2020-08-16", "2020-09-02"]]
+
+bridges:
+  # D30 (proposta): ajuste 2012–2019, teste 2020–2021 (deriva do Aqua, R05). Se D30 cair: fit [2012, 2021], sem test.
+  - {id: aqua_snpp,  from: AQUA,  to: SNPP, fit: [2012, 2019], test: [2020, 2021], methods: [M1, M2]}
+  - {id: terra_aqua, from: TERRA, to: AQUA, fit: [2003, 2010], methods: [M1]}   # antes da deriva (R05)
+  - {id: n20_snpp,   from: N20,   to: SNPP, fit: [2018, 2025], methods: [M1]}   # razão medida 0,98
+
+# Cadeias até a referência (aplicadas da esquerda para a direita)
+chains:
+  TERRA: [terra_aqua, aqua_snpp]
+  AQUA:  [aqua_snpp]
+  N20:   [n20_snpp]
+
+lambda_grid: [5, 20, 50]   # vencedor por ponte vem de validation.json (Samuel); não editar à mão
+
+inputs:
+  agg_monthly: data/interim/agg_monthly.parquet       # Murilo
+  grid2km_pass: data/interim/grid2km_pass.parquet     # Murilo (só M2)
+outputs:
+  harm_series: data/processed/harm_series.parquet     # Melissa → Murilo
+  validation: app/public/data/validation.json         # Samuel
+  pettitt: app/public/data/pettitt.json               # Samuel
