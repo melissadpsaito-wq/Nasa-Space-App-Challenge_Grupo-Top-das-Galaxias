@@ -48,3 +48,15 @@ def test_scale_is_snpp(cfg):
     np.testing.assert_allclose(te.n_harm, 8 * te.n_raw, rtol=1e-6)              # Terra × 2 × 4
     y = h.assign(a=h.ym // 100).groupby("a").n_harm.sum()
     assert y[2011] == pytest.approx(y[2012], rel=1e-6)                           # sem degrau na emenda
+
+
+def test_hier_keeps_parent_totals(cfg):
+    """D37: com filhos "<pai>.x", Σ filhos do harmonizado hierárquico = harmonizado do pai."""
+    agg = synth()
+    kids = pd.concat([agg.assign(cell=agg.cell + ".a", n=agg.n * 2), agg.assign(cell=agg.cell + ".b", n=agg.n)])
+    ctx = base.Context(cfg=cfg, extra={"parent": lambda c: c.split(".")[0]})
+    h = harmonize(kids, cfg, lam=20, hier=True, ctx=ctx)
+    p = harmonize(kids.assign(cell=kids.cell.str.split(".").str[0]).groupby(["sensor", "cell", "ym"], as_index=False).n.sum(),
+                  cfg, lam=20)
+    up = h.assign(cell=h.cell.str.split(".").str[0]).groupby(["cell", "ym"]).n_harm.sum()
+    np.testing.assert_allclose(up.loc[p.set_index(["cell", "ym"]).index].to_numpy(), p.n_harm.to_numpy(), rtol=1e-9)

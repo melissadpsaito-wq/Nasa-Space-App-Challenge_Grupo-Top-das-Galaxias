@@ -20,3 +20,4 @@ app/dist/
 Thumbs.db
 
 data/clean_*/
+data/processed/

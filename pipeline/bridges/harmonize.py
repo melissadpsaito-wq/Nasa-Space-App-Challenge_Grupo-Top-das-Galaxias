@@ -14,7 +14,7 @@ Saída (DATA_DICTIONARY §5): cell, ym, n_harm, n_raw, lo, hi, low_conf, src
 Uso (raiz do repo):
   python -m pipeline.bridges.harmonize --lam 20                                   # Brasil res 4 → data/processed/harm_series.parquet
   python -m pipeline.bridges.harmonize --lam 20 --agg data/interim/pantanal/agg_monthly.parquet --out data/processed/pantanal/harm_series.parquet
-  python -m pipeline.bridges.harmonize --lam 20 --agg data/interim/res5/agg_monthly.parquet --out data/processed/res5/harm_series.parquet
+  python -m pipeline.bridges.harmonize --lam 20 --hier --agg data/interim/res5/agg_monthly.parquet --out data/processed/res5/harm_series.parquet
 """
 from __future__ import annotations
 
@@ -35,9 +35,9 @@ def analysis_months(cfg: dict) -> list[int]:
     return [ym for ym in base.months_of(range(lo // 100, hi // 100 + 1)) if lo <= ym <= hi]
 
 
-def harmonize(agg: pd.DataFrame, cfg: dict, lam: float) -> pd.DataFrame:
+def harmonize(agg: pd.DataFrame, cfg: dict, lam: float, hier: bool = False, ctx: base.Context | None = None) -> pd.DataFrame:
     """agg = agg_monthly (sensor, cell, ym, n). Devolve a série harmonizada densa (todas as células × meses)."""
-    ctx = base.Context(cfg=cfg)
+    ctx = ctx or base.Context(cfg=cfg)
     data = {s: agg.loc[agg.sensor == s, ["cell", "ym", "n"]].reset_index(drop=True) for s in agg.sensor.unique()}
     cells = sorted(set(agg.cell))
     months_all = analysis_months(cfg)
@@ -49,7 +49,11 @@ def harmonize(agg: pd.DataFrame, cfg: dict, lam: float) -> pd.DataFrame:
         if s == cfg["reference"]:
             harm = A.rename(columns={"n": "n_pred"}).astype({"n_pred": float})
         else:
-            run = base.build_chain(s, lambda bid: M1(lam, ctx), data.get, cfg)
+            if hier:                                    # D37 (proposta): total do pai res 4, padrão do filho
+                from pipeline.bridges.m1_hier import M1Hier
+                run = base.build_chain(s, lambda bid: M1Hier(lam, ctx), data.get, cfg)
+            else:
+                run = base.build_chain(s, lambda bid: M1(lam, ctx), data.get, cfg)
             harm = run(A, months)                       # A densa → todas as células recebem previsão
         d = A.rename(columns={"n": "n_raw"}).merge(harm, on=["cell", "ym"], how="left")
         d["n_harm"] = d.pop("n_pred").fillna(0.0)
@@ -69,6 +73,7 @@ def main(argv=None) -> None:
     ap.add_argument("--agg", help="agg_monthly (padrão: inputs.agg_monthly do YAML)")
     ap.add_argument("--out", help="saída (padrão: outputs.harm_series do YAML)")
     ap.add_argument("--config", default=str(base.CONFIG))
+    ap.add_argument("--hier", action="store_true", help="res 5/6: M1 hierárquico com total do pai res 4 (D37, proposta)")
     a = ap.parse_args(argv)
     cfg = base.load_config(a.config)
     lam = a.lam
@@ -80,14 +85,14 @@ def main(argv=None) -> None:
     agg_path = Path(a.agg or cfg["inputs"]["agg_monthly"])
     out = Path(a.out or cfg["outputs"]["harm_series"])
     agg = pd.read_parquet(agg_path, columns=["sensor", "cell", "ym", "n"])
-    h = harmonize(agg, cfg, lam)
+    h = harmonize(agg, cfg, lam, hier=a.hier)
     out.parent.mkdir(parents=True, exist_ok=True)
     h.to_parquet(out, index=False)
 
     y = h.assign(ano=h.ym // 100).groupby("ano").agg(bruto=("n_raw", "sum"), harmonizado=("n_harm", "sum"),
                                                       fonte=("src", lambda s: "/".join(dict.fromkeys(s))))
     pd.set_option("display.width", 160)
-    print(f"harm_series PROVISÓRIA · M1 λ={lam:g} · {agg_path} → {out}")
+    print(f"harm_series PROVISÓRIA · {'M1 hierárquico (pai res 4)' if a.hier else 'M1'} λ={lam:g} · {agg_path} → {out}")
     print(f"{h.cell.nunique():,} células × {h.ym.nunique()} meses = {len(h):,} linhas\n")
     print(y.round(0).astype({"bruto": "int64", "harmonizado": "int64"}).to_string())
     j = y.harmonizado
