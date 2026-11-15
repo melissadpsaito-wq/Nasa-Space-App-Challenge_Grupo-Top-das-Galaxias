@@ -1,5 +1,8 @@
 # Changelog da governança
 
+## v2.7 · sáb 14/11 21:13
+- Dados 2.2 fechada: D29 **decidida** (texto ajustado ao `grid.py`: `frp_sum` = Σ FRP de todos os pixels); DATA_DICTIONARY §2 sem "texto pendente"; `DADOS-2.2-2.3-GRADE-H3.md` §6 atualizada e §7 com a conferência do `grid_log.csv` (0 falhas, Brasil e Pantanal); STATUS com a seção 21:13.
+
 ## v2.6 · sáb 14/11 19:40
 - Incorpora o PR `ciencia/m1`: `pipeline/grid.py` (2.2/2.3), `pipeline/bridges/{m1,check_method,m1_preview,check_extra}.py`, `tests/{test_m1,test_grid}.py`, M1 no `test_bridge_contract.py`.
 - Base de código = `main` (`e43f564`, contrato 3.1 final YAML v3) + `ciencia/m1`; documentos de governança da v2.4/v2.5 mantidos.

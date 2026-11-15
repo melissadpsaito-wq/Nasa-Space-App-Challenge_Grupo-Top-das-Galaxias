@@ -6,7 +6,7 @@ Dono: Murilo · Branch `ciencia/m1` (PR aberto → `main`, commit `f30b43d`) · 
 | Passo | Como |
 |---|---|
 | Ler | `read_parquet('<clean>/*/*.parquet')` (DuckDB), opcional `--years` |
-| Peneira (passo 1) | 1 linha por célula 0,02° × passagem (passagem = `sensor + ts + daynight`, conferida pelo `check_method`): `gy = floor(lat/0,02)`, `gx = floor(lon/0,02)`, `frp_max` (D26), `frp_sum` (Σ FRP de todos os pixels, D29 ajustada), `n_pix`, `pix_area` |
+| Peneira (passo 1) | 1 linha por célula 0,02° × passagem (passagem = `sensor + ts + daynight`, conferida pelo `check_method`): `gy = floor(lat/0,02)`, `gx = floor(lon/0,02)`, `frp_max` (D26), `frp_sum` (Σ FRP de todos os pixels, D29), `n_pix`, `pix_area` |
 | Bairro (passo 2) | Célula H3 res 4 do **centro** de cada célula 0,02° (`h3.latlng_to_cell`, só para as distintas) · `ym = ano·100 + mês` |
 | Agregar | `agg_monthly`: `GROUP BY sensor, cell, ym` → `n = count(*)`, `frp_mean`, `frp_p90`, `night_frac`, `pix_area`, `frp_sum` |
 | Conferir | Σ `n_pix` = focos limpos e Σ `n` = linhas da grade, por sensor × ano (assert); `grid_log.csv` |
@@ -52,4 +52,12 @@ O degrau de +20% do bruto em 2020 (Pantanal 5,94 → 7,17) **some na grade** (3,
 | Avisos LF → CRLF no `git add` | Inofensivo (Windows) |
 
 ## 6. Pendente
-Merge do PR `ciencia/m1` · Samuel/Melissa geram `agg_monthly` na máquina deles (`ingest` + `grid`, ~1 min) ou recebem pelo Drive · DATA_DICTIONARY §2/§5: registrar `frp_sum` (D29, texto a ajustar) · Makefile `grid` com `AREA`.
+Merge no `main` (PR `ciencia/m1` e `docs/governanca-v2.6`) · Samuel/Melissa geram `agg_monthly` na máquina deles (`ingest` + `grid`, ~1 min) ou recebem pelo Drive.
+Feito (21:13): D29 decidida e registrada no DATA_DICTIONARY §2/§5 · Makefile `grid --area $(AREA)` · conferência do `grid_log.csv` (abaixo).
+
+## 7. Conferência final (sáb 14/11 21:13)
+| Arquivo | Linhas sensor × ano | Falhas de conservação | Focos limpos → células-passagem |
+|---|---|---|---|
+| `data/interim/grid_log.csv` (Brasil) | 72 | 0 | Terra 3.521.179 → 2.805.976 · Aqua 5.840.991 → 4.601.119 · S-NPP 17.303.874 → 8.554.315 · N20 9.711.325 → 4.800.525 |
+| `data/interim/pantanal/grid_log.csv` | 72 | 0 | Terra 200.914 → 150.027 · Aqua 251.978 → 182.360 · S-NPP 913.045 → 327.495 · N20 662.298 → 225.249 |
+Conservação = Σ `n_pix` igual aos focos limpos e Σ `n` do agregado igual às células-passagem, em todas as linhas. Pantanal: focos limpos iguais aos da 2.1 (2.028.235).

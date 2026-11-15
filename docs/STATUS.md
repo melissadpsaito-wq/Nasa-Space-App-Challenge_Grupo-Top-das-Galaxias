@@ -91,3 +91,11 @@ No mês: 65% a ≤ 10 km de um fogo MODIS · 26% a 10–50 km · **9% invisívei
 | Melissa | 3.3 M2 (`pipeline/bridges/m2.py`): τ por trimestre × dia/noite em 2012–2019; meta bater M1 (0,447 / 0,418) |
 | Samuel | `validate/run.py` → `validation.json` (bruto × global × M1 × M2) com o `agg_monthly` Brasil |
 | Luana | App com JSON falso → real às 23:45; unidade "escala S-NPP"; gráfico D34 |
+
+### Sáb 21:13 · Dados 2.2 fechada
+| Item | Situação |
+|---|---|
+| Conservação | `grid_log.csv` Brasil e Pantanal: 72 linhas sensor × ano cada, 0 falhas |
+| D29 | **decidida**: `frp_sum` = Σ FRP de todos os pixels (texto = `grid.py`) |
+| Docs | DATA_DICTIONARY §2/§5 ✅ · Makefile `grid --area $(AREA)` ✅ · `DADOS-2.2-2.3-GRADE-H3.md` §7 |
+| Falta | Merge no `main`: PR `ciencia/m1` e PR `docs/governanca-v2.6` (GitHub) |

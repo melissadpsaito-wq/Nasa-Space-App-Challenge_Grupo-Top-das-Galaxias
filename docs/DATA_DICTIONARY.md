@@ -24,7 +24,7 @@ Filtros já aplicados: `type = 0`, MODIS conf ≥ 30, VIIRS conf ∈ {n, h}, ts 
 | frp_mean, frp_p90 | float | FRP médio e percentil 90 |
 | night_frac | float | fração noturna |
 | pix_area | float | área média do pixel (km²) |
-| frp_sum | float | Σ FRP de todos os pixels no mês (MW) — coluna extra para teste (D29, texto pendente) |
+| frp_sum | float | Σ FRP de todos os pixels no mês (MW) — coluna extra para teste (D29) |
 
 ## 3. `app/public/data/harm_monthly.json` (consumido pelo Front)
 ```json
