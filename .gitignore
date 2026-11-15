@@ -1,7 +1,7 @@
-﻿# segredos
+# segredos
 .env
 *.key
-# dados brutos e intermediÃ¡rios (ficam no Drive)
+# dados brutos e intermediários (ficam no Drive)
 zips/
 data/raw/
 data/clean/
