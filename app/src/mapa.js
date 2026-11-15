@@ -9,6 +9,7 @@ import { ClimaStore, areaClimatologia } from './climatologia.js';
 import { initI18n, onLang, t, monthName, ymLabel, fmt } from './i18n.js';
 import { renderCalendar, COLOR, MIN_SHOW } from './calendar.js';
 import { fireScore, typicalPeak, historicalChance, chanceAllMonths, toCSV } from './analytics.js';
+import { loadTimelineArea, freezeArea } from './timeline.js';
 
 const FIRST = 200011, LAST = 202512;   // série nov/2000–dez/2025 (D33)
 const MIN_ZOOM_HEX = 7;                // abaixo disso não desenha hexágonos (peso dos tiles)
@@ -19,7 +20,7 @@ const climaStore = new ClimaStore(import.meta.env.BASE_URL);
 const $ = (id) => document.getElementById(id);
 
 // sel = { kind: 'point', lat, lon, cells: [cell] } | { kind: 'area', ring, cells }
-const state = { from: FIRST, to: LAST, mode: 'harm', tab: 'history', sel: null, series: null, error: null };
+const state = { from: FIRST, to: LAST, mode: 'harm', tab: 'history', sel: null, series: null, error: null, timeline: null };
 
 initI18n();
 
@@ -123,7 +124,7 @@ const wrapLon = (lng) => ((lng + 540) % 360) - 180;
 let selSeq = 0;
 async function loadSelection(sel, highlight) {
   const my = ++selSeq;
-  Object.assign(state, { sel, series: null, error: null });
+  Object.assign(state, { sel, series: null, error: null, timeline: null });
   if (selLayer) selLayer.remove();
   selLayer = L.layerGroup(highlight).addTo(map);
   renderPanel('loading');
@@ -159,7 +160,7 @@ function selectArea(ring) {
   const shape = L.polygon(ring, { color: '#0b2545', weight: 2, dashArray: '5 4', fill: false });
   if (parents.size > MAX_PARENTS_AREA) {
     ++selSeq;
-    Object.assign(state, { sel: null, series: null, error: null });
+    Object.assign(state, { sel: null, series: null, error: null, timeline: null });
     if (selLayer) selLayer.remove();
     selLayer = L.layerGroup([shape]).addTo(map);
     $('panel').innerHTML = `<p class="panel-msg">${t('draw.big')}</p>`;
@@ -340,10 +341,37 @@ async function renderClima() {
     <p class="note">${t('soon.outlook')}</p>`;
 }
 
+// ---------- Timeline (4.4, Parte 1): área fixada ----------
+// Textos provisórios: vão para i18n.js na Parte 2 (cursor).
+const tlText = (pt, en) => ((document.documentElement.lang || '').startsWith('pt') ? pt : en);
+
+let tlSeq = 0;
+async function renderTimeline() {
+  const el = $('panel');
+  const sel = state.sel;
+  if (!sel) { el.innerHTML = `<p class="panel-msg">${t('panel.empty')}</p>`; return; }
+  const my = ++tlSeq;
+  el.innerHTML = `<p class="panel-msg">${t('panel.loading')}</p>`;
+  let data;
+  try { data = await loadTimelineArea(store, sel.cells, cellToParent); } catch (err) {
+    if (my === tlSeq) el.innerHTML = `<p class="panel-msg">${t('panel.error')} ${err.message}</p>`;
+    return;
+  }
+  if (my !== tlSeq || state.tab !== 'timeline' || state.sel !== sel) return;
+  if (data.empty) { state.timeline = null; el.innerHTML = `<p class="panel-msg">${t('panel.nofire')}</p>`; return; }
+  state.timeline = freezeArea(sel, data); // área fixa: o cursor (Parte 2) só mexe no mês
+  const d = state.timeline.data;
+  el.innerHTML = `
+    <div class="panel-head">${regionHead(state.timeline.sel)}</div>
+    <p class="panel-msg">${tlText('Área fixada', 'Area locked')}: ${d.cellsTotal} ${t('panel.cells')} (${d.cellsWithFire} ${tlText('com fogo', 'with fire')})
+      · ${d.months.length} ${tlText('meses', 'months')} (${ymLabel(d.months[0])} – ${ymLabel(d.months.at(-1))}).</p>
+    <p class="note">${tlText('Cursor de ano e mês e mapa colorido: próxima etapa.', 'Year and month cursor and colored map: next step.')}</p>`;
+}
+
 function renderPanel(status) {
   const el = $('panel');
   const msg = (k, extra = '') => { el.innerHTML = `<p class="panel-msg">${t(k)} ${extra}</p>`; };
-  if (state.tab === 'timeline') return msg('soon.timeline');
+  if (state.tab === 'timeline') return status === 'loading' ? msg('panel.loading') : renderTimeline();
   if (state.tab === 'outlook') return status === 'loading' ? msg('panel.loading') : renderClima();
   if (status === 'loading') return msg('panel.loading');
   if (state.error) return msg('panel.error', state.error);
