@@ -10,3 +10,5 @@ scipy
 pyyaml
 python-dotenv
 pytest
+pyyaml
+pyarrow
