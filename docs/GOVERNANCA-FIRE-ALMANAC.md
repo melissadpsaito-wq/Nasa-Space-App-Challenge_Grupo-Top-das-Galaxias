@@ -1,7 +1,7 @@
 # Fire Almanac — Governança do projeto (consolidada)
 
 **NASA Space Apps 2026 · Harmonization of MODIS and VIIRS Hot Spots · Grupo Top das Galáxias · São Paulo**
-Versão **v2.15** · dom 15/11/2026 06:05 · decisões até **D46** · **Front 4.1 concluída no código** (D46: visual do Samuel em `app/` estático, EN/PT, período De/Até; falta build, commit e Pages) · **Ciência 3.3 concluída** (limiar de FRP por trimestre × dia/noite; M2 = M1 → série segue com M1) · **calendário diário harmonizado gerado** (D43–D45: 5.869.988 dias com fogo, 0 dias vazios) (D39 proposta; demais decididas) · **Dados 2.4 concluída** (export provisório res 5 em tiles, D38) · **ΣFRP harmonizado** (D40, validado) e **base de treino Brasil inteiro** (D42) · regra dos 50 MB revogada (D41) · Ciência 3.2 e Dados 2.1–2.3 concluídas
+Versão **v2.16** · dom 15/11/2026 09:45 · decisões até **D46** · **Front 4.2 concluída** (PR #7 em `main` 09:27: desenho de área, Fire Anomaly Score D25, chance D27 + faixa dos 12 meses, pico típico, CSV; testada em outra máquina 09:38) · **Front 4.1 em `main`** (PR #6; Pages ainda publica o README: falta Source = GitHub Actions) · **Ciência 3.3 concluída** (limiar de FRP por trimestre × dia/noite; M2 = M1 → série segue com M1) · **calendário diário harmonizado gerado** (D43–D45: 5.869.988 dias com fogo, 0 dias vazios) (D39 proposta; demais decididas) · **Dados 2.4 concluída** (export provisório res 5 em tiles, D38) · **ΣFRP harmonizado** (D40, validado) e **base de treino Brasil inteiro** (D42) · regra dos 50 MB revogada (D41) · Ciência 3.2 e Dados 2.1–2.3 concluídas
 Fonte da verdade: repositório `melissadpsaito-wq/Nasa-Space-App-Challenge_Grupo-Top-das-Galaxias` (`main`). Este arquivo é um retrato consolidado; os arquivos de `docs/` continuam valendo e são atualizados primeiro.
 
 ---
@@ -50,6 +50,7 @@ Regras: decisão não registrada não existe · decisões nunca são apagadas (r
 | Calendário diário (D43–D45) | Calendário ano × dia: cada dia com detecção, convertido para a escala S-NPP pelo fator do M1 (o dia original é mantido); fogo fraco estimado sem detecção (termo aditivo) fica fora do diário, como nota mensal (D45); score, chance e Outlook seguem mensais; saem SP cana (D22) e polimento do D34 (confirmar no CP4) |
 | FRP e base de treino (D40, D42, D39) | ΣFRP mensal harmonizado via M1 (validado no teste 2020–21); base de treino = todos os hexágonos res 5 do Brasil × 302 meses, zeros incluídos; FRP como variável do modelo só se o hindcast melhorar (D39, proposta) |
 | Front (D46, 4.1) | `app/` (Vite + Leaflet + h3-js + Plot): landing; mapa com busca, lat/lon, clique, período De/Até, harmonizado × bruto, hexágonos do período (zoom ≥ 7), painel e calendário ano × mês; abas Timeline e Outlook como "próxima etapa"; backend Flask do Samuel não publicado |
+| Front (4.2) | Desenho de área por cliques → hexágonos res 5 com centro dentro (limite 16 tiles); Fire Anomaly Score do mês "Até" × mesmo mês dos anos anteriores (D25); chance histórica do mês e dos 12 meses (D27, plano B do Outlook, R18); pico típico (D25); CSV do contrato §7. Indicadores sempre na série harmonizada mensal (R24) |
 | Fora | Chuva · AI1 (ML de harmonização) · KS · pegada espacial · P2 · V1 · índice de agricultores (D19) · 2026 observado e NRT (D33) · bioma (D33) · globo 3D · chatbot |
 | Futuro (pós-evento) | Mundo inteiro (pipeline por país, D28) · 2026 + NRT com NOAA-20/21 (D11) |
 
@@ -68,7 +69,7 @@ Regras: decisão não registrada não existe · decisões nunca são apagadas (r
 Cada checkpoint: cada pessoa mostra **o que roda** (3 min); o Capitão registra em `docs/STATUS.md`. Sono em turnos ≥ 5 h (01:30–07:30).
 
 ## 6. Caminho crítico e dependências
-**~~2.1 → 2.2 → 2.3~~ ✅ → ~~2.4 export provisório~~ ✅ → ~~3.3 limiar FRP + M2~~ ✅ → 3.6 validação (vencedor, λ) → 3.4 bootstrap Brasil → 2.4b reexport final → ~~4.1 front estático~~ ✅ (código; build/commit/Pages pendentes) → 4.4 app com dados reais → CP7**
+**~~2.1 → 2.2 → 2.3~~ ✅ → ~~2.4 export provisório~~ ✅ → ~~3.3 limiar FRP + M2~~ ✅ → 3.6 validação (vencedor, λ) → 3.4 bootstrap Brasil → 2.4b reexport final → ~~4.1 front estático~~ ✅ (PR #6; Pages pendente) → ~~4.2 área + indicadores + CSV~~ ✅ (PR #7) → 4.4 app com dados reais → CP7**
 Previsão: **série harmonizada (+ ΣFRP D40, base Brasil D42) → features (Murilo) → modelo + hindcast (Samuel) → portão CP5 → `forecast_2026.json` → card Outlook (Luana)**
 
 | Passo | Dono | Depende de | Libera |
@@ -90,8 +91,9 @@ Previsão: **série harmonizada (+ ΣFRP D40, base Brasil D42) → features (Mur
 | ΣFRP harmonizado (D40) ✅ 00:41 · base de treino Brasil (D42) ✅ 01:25 | Murilo | 2.3, M1 | P1, P2 (teste D39) |
 | Diário harmonizado (D43, D45) ✅ 03:00: `fogo_diario_harm.csv` 5.869.988 dias com fogo, 0 dias vazios, 28.053 hexágonos; aditivo mensal 2.034.079 hexágono-mês | Murilo | D40, `audit_daily` | 2.4c export diário → calendário (Luana) |
 | 2.4c Export diário `harm_daily_<pai>.json` (contrato §13, D44) | Murilo | diário harmonizado | 4.x calendário diário (Luana) |
-| 4.1 Front estático ✅ 06:00 (D46): visual do Samuel portado para `app/` sem Flask; EN/PT; período De/Até; leitor de tiles validado nos 128 tiles reais; 11 testes; teste em navegador (Pantanal) · **falta**: `npm run build`, commit `front/setup` + PR, Pages ligado · resumo `docs/FRONT-SISTEMA-WEB.md` | Murilo + Samuel (rascunho Claude) | 2.4 | 4.2–4.5 |
-| 4.2–4.3 Desenho de área, score D25, chance D27, pico típico, CSV | Luana | 4.1 | 4.4 |
+| 4.1 Front estático ✅ 06:00 (D46): visual do Samuel portado para `app/` sem Flask; EN/PT; período De/Até; leitor de tiles validado nos 128 tiles reais; 11 testes; teste em navegador (Pantanal) · PR #6 em `main` (`e28691c`) · **falta**: Pages com Source = GitHub Actions (hoje mostra o README) · resumo `docs/FRONT-SISTEMA-WEB.md` | Murilo + Samuel (rascunho Claude) | 2.4 | 4.2–4.5 |
+| 4.2 ✅ 09:27 Desenho de área, score D25, chance D27 (+ 12 meses), pico típico, CSV: `app/src/analytics.js` + `test/analytics.test.js` (9; total 20/20) · PR #7 (`da98cbe`, merge `194c451`) · merge sem revisão prévia; app aberto em outra máquina 09:38 | Murilo (rascunho Claude) | 4.1 | 4.4, plano B do CP5 |
+| 4.3 Áreas prontas (Pantanal, D22, `areas.json`) | Murilo (`areas.json`) → Luana | 4.2 | demo |
 | 4.4–4.5 Dados reais, score, Outlook, Method, CSV | Luana | 2.4, P3, 3.6, 3.7 | demo |
 
 ## 7. Regras de trabalho
@@ -167,8 +169,10 @@ Previsão: **série harmonizada (+ ΣFRP D40, base Brasil D42) → features (Mur
 | Texto | "~24 km" e "~22,6 km de lado" da D35/PREVISAO → célula res 5 ~17 km (res 4 ~45 km) | ✅ v2.10 |
 | D41 | Retirar "arquivos > 50 MB" de `GOVERNANCE.md` §7, `CONTRIBUTING.md` e `SUBMISSION_CHECKLIST.md` no repo | Feito neste documento (§7); falta nos arquivos do repo |
 | Dados (resto da 2.3) | Makefile com `AREA` e `RES` (`make ingest grid AREA=brasil RES=5`) · Samuel/Melissa: gerar `agg_monthly` res 4/res 5 na máquina deles (~1 min) ou receber pelo Drive | Antes do CP3 (não bloqueia) |
-| 4.1 | `npm run build` (se falhar: `npm install-scripts approve esbuild`) → commit `git add app/ docs/FRONT-SISTEMA-WEB.md .github/workflows/pages.yml` (nunca `git add .`) → PR `front/setup` → `main` | Agora |
-| Pages | Settings → Pages → Source = GitHub Actions (site fica sem dados até o commit final dos tiles, D38) | Melissa, após o merge |
+| 4.1 | ~~Commit + PR `front/setup`~~ ✅ PR #6 · `npm run build` roda no workflow do Pages | ✅ |
+| Pages | **Hoje o link mostra o README** (modo "Deploy from a branch"). Settings → Pages → Source = **GitHub Actions** → Actions → "Deploy app to GitHub Pages" → Run workflow. Site fica sem dados até o commit final dos tiles (D38, R25) | Melissa — agora |
+| 4.2 | Revisão pós-merge da Luana (roteiro: ponto -18,5/-57, área, CSV, EN/PT, console) e comentário no PR #7 · marcar `[x] 4.2` no `ROADMAP.md` e registrar no `STATUS.md` (CP5) · confirmar "ano com fogo" = ≥ 0,5 detecção no mês (corte R22) no D27/pico · remover `leaflet-draw` do `package.json` (sem uso) | Luana / Murilo — CP5 |
+| Regra de merge | PR #7 entrou sem revisão (exceção por prazo); próximos PRs voltam à regra §7 | Murilo |
 | Front antigo | Avisar Samuel e Luana: front oficial = `app/`; `app.py`, `templates/`, `static/`, `index.html` e `js/` da raiz ficam só como referência (remover antes do CP7) | Agora |
 | WIP solto | Arquivos `pipeline/{audit_daily,daily_harm,export_*,frp_harmonize,spot_check}.py`, `bridges/m2.py`, `tests/test_m2.py` (untracked) → commitar na `dados/frp-d40`/`ciencia/m2`; `notebooks/Model/*` modificados/apagados → confirmar com o dono antes de qualquer `restore` | Manhã |
 | Sugestão (não decidida) | Previsão usar também features da célula-pai res 4 (vizinhança) e regra de confiança do app (res 5 com < 5 anos de fogo no mês → mostrar res 4) | Decidir com o hindcast do Samuel |
@@ -260,7 +264,7 @@ Status: proposta · decidida · revertida. Nova decisão: próximo ID, uma linha
 | R22 | Termo aditivo do M1 cria "meses com fogo" pequenos antes de 2012 (2,9 M hexágono-mês no ΣFRP) → frequência de meses ativos diferente antes/depois de 2012 | Alta (medido) | Médio (features tipo `frac_active_M`) | Total ΣFRP 1,061 no teste; 73% das linhas pré-2012 só com aditivo | Limiar `--min-mw` (ex. 11 MW) nas features de frequência; total segue correto; declarar no Method | Murilo + Samuel |
 | R23 | Base de treino (D42) muito desbalanceada (59% hexágono-mês zero; 3.173 hexágonos sempre zero) | Média | Médio | Métricas do hindcast dominadas por zeros | Samuel compara hindcast com e sem os hexágonos sempre zero; reportar BSS/AUC só nos ativos também | Samuel |
 | R24 | Calendário diário (D44) fere a regra "agregação ≥ 8 dias" (Guia MODIS C6 §7.1.1); juiz questiona comparação dia a dia antes × depois de 2012 | Média | Alto (Validity) | Pergunta de mentor/juiz sobre o diário | Score/chance/Outlook mensais; rótulo "distribuição diária estimada"; Method explica D43; mostrar que a soma do mês é a harmonizada | Murilo + Luana |
-| R25 | Site publicado sem dados até o commit final dos tiles (D38) ou build falhar no Pages | Média | Alto (demo/link) | Link do Pages abre com "No fire detected" em todo lugar | Demo local (`npm run dev`) até o CP7; commit único dos tiles antes do CP7; `npm run build` local antes do PR; testar o link em anônimo e no celular (R08) | Murilo + Luana |
+| R25 | Site publicado sem dados até o commit final dos tiles (D38) ou build falhar no Pages | **Ocorreu em parte (09:26)**: Pages publica o README (Source não trocada) | Alto (demo/link) | Link do Pages abre o README ou "No fire detected" em todo lugar | Demo local (`npm run dev`) até o CP7; commit único dos tiles antes do CP7; `npm run build` local antes do PR; testar o link em anônimo e no celular (R08) | Murilo + Luana |
 
 
 ## Anexo C — Cronograma hora a hora (`docs/PLANO-48H.md`)
@@ -688,6 +692,7 @@ Exigência do Space Apps: declarar onde e como a IA foi usada; imagem/vídeo ger
 | 15/11 | Claude (Anthropic) | Dados | `pipeline/daily_harm.py` (diário harmonizado, D43/D45) e explicação do termo aditivo; governança v2.12–v2.13 (D43–D45, R24, contrato §13) | Murilo |
 | 15/11 | Claude (Anthropic) | Ciência 3.3 | Rascunho de `pipeline/bridges/m2.py` (limiar de FRP, M2, `--eval`), `tests/test_m2.py` e `docs/CIENCIA-3.3-M2.md`; prova M2 = M1 em λ = 0 e λ → ∞; correção do `--eval` (só célula-mês ativas); governança v2.14 | Murilo |
 | 15/11 | Claude (Anthropic) | Front 4.1 / D46 | Port do front do Samuel para `app/` estático: i18n EN/PT, mapa com período e hexágonos, calendário (Plot), leitor de tiles + 11 testes, `pages.yml`; correção do import do Leaflet; teste em navegador com bibliotecas e tiles reais; resumo `docs/FRONT-SISTEMA-WEB.md`; governança v2.15 | Murilo |
+| 15/11 | Claude (Anthropic) | Front 4.2 | Rascunho de `app/src/analytics.js` (Fire Anomaly Score e pico típico D25, chance histórica D27, CSV §7) + `test/analytics.test.js` (9 testes); desenho de área por cliques (`polygonToCells` res 5) e painel com indicadores e botão CSV em `mapa.js`; textos EN/PT; governança v2.16 | Murilo |
 <!-- Se alguém usar GitHub Copilot ou outra IA, adicionar uma linha aqui. -->
 
 ### Texto para o formulário (rascunho)
@@ -776,5 +781,19 @@ We used Claude (Anthropic) as a pair-programmer and reviewer: planning, explorat
 | Testes | 11/11 (`npm test`) · 128 tiles reais validados · navegador com Leaflet/h3/Plot reais: Pantanal (-18,5 / -57) 528 harm × 304 brutas, pico set/2004 (Aqua), 0 erro no console · celular 375 px ok |
 | Correções na revisão | Leaflet 1.9 sem `export default` → `import * as L` · paleta verde→vermelho → cividis · ano até 2026 → até 2025 · `mapa_cores.js` inexistente removido · textos de precisão e de previsão ajustados |
 | Arquivos | `app/{index,mapa}.html` · `app/src/{main,mapa,data,calendar,i18n}.js` · `app/src/{style,mapa}.css` · `app/test/data.test.js` · `app/vite.config.js` · `.github/workflows/pages.yml` · `docs/FRONT-SISTEMA-WEB.md` |
-| Falta para fechar | `npm run build` · commit `front/setup` + PR com revisão · Pages ligado (R25) |
+| Falta para fechar | ~~commit `front/setup` + PR~~ ✅ PR #6 · Pages com Source = GitHub Actions (R25; hoje mostra o README) |
 | Próximo (Luana) | Desenho de área · score D25 + chance D27 + pico típico · CSV · Timeline · Method · Outlook (após CP5) · calendário diário (após 2.4c) |
+
+## Anexo N — Front 4.2 concluída (`claude/38-front-4.2.md`, resumo · dom 15/11 09:38)
+| Item | Regra implementada | Onde |
+|---|---|---|
+| Desenho de área | Cliques no mapa (≥ 3 cantos) → duplo clique / Enter / "Fechar área"; Esc cancela · `polygonToCells(ring, 5)` (centro dentro); área menor que 1 hexágono → hexágono do centro · limite 16 tiles res 2 · sem `leaflet-draw` (exige `L` global; bug com Leaflet 1.9) | `mapa.js` |
+| Fire Anomaly Score (D25) | Mês "Até" do período × mesmo mês dos anos **anteriores** (sem vazamento); percentil mid-rank 0–100; faixas 60/85/95 (Dentro do normal · Acima · Muito acima · Extremo); razão sobre a mediana; < 5 anos de histórico = insuficiente | `analytics.js` `fireScore` |
+| Chance histórica (D27) | normal = mediana do mês M em todos os anos; k de 10 últimos anos completos (2016–2025) acima; < 5 anos com fogo em M = insuficiente; faixa dos 12 meses = plano B do Outlook (R18) | `historicalChance`, `chanceAllMonths` |
+| Pico típico (D25) | Mês que mais vezes foi o pico nos anos completos com fogo; mostra o 2º colocado | `typicalPeak` |
+| CSV (§7) | `year,month,harmonized,lo,hi,raw,low_conf`, período selecionado, 1 casa decimal; nome `fire-almanac_<local>_<de>-<até>.csv` | `toCSV` |
+| Validity | Indicadores sempre na série harmonizada mensal, mesmo no modo Bruto (R24); "frequência histórica, não previsão"; "não é uma propriedade" (R19); "ano com fogo" = ≥ 0,5 detecção no mês (corte R22, a confirmar) | `i18n.js`, `analytics.js` |
+| Testes | `npm test` 20/20 (11 do leitor + 9 novos) · app aberto em outra máquina 09:38 | `test/` |
+| Git | Branch `front/area-indicadores` · commit `da98cbe` · PR #7 · merge `194c451` (09:27, sem revisão prévia) | — |
+| Arquivos | `app/src/analytics.js` (novo) · `app/test/analytics.test.js` (novo) · `app/src/{mapa,i18n,calendar}.js` · `app/src/mapa.css` · `app/mapa.html` · `docs/AI_USAGE.md` | — |
+| Falta | Revisão pós-merge da Luana · `[x] 4.2` no `ROADMAP.md` + `STATUS.md` · áreas prontas (4.3, `areas.json`) · Timeline/Method (4.4) · Outlook após CP5 · calendário diário após 2.4c | — |
