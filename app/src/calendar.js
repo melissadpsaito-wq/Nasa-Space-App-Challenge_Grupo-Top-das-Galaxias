@@ -1,10 +1,11 @@
 // Calendário ano × mês da área no período escolhido (Guia §4.3). Cividis, mesmo domínio para bruto e harmonizado.
 import * as Plot from '@observablehq/plot';
 import { t, monthName, fmt } from './i18n.js';
+import { MIN_FIRE } from './analytics.js';
 
 export const COLOR = { scheme: 'cividis', reverse: true, type: 'sqrt' };
 // Abaixo disso o mês/hexágono aparece como "sem fogo" (só exibição; o dado não muda).
-export const MIN_SHOW = 0.5;
+export const MIN_SHOW = MIN_FIRE;
 
 /** s = série já recortada ao período (slicePeriod). mode = 'harm' | 'raw'. */
 export function renderCalendar(el, s, mode) {
