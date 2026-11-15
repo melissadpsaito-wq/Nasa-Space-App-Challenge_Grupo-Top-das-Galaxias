@@ -1,0 +1,46 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+    background-color: #121212; 
+    color: #e0e0e0;            
+}
+
+
+.dashboard-container {
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    gap: 20px;                 
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.card {
+    border-radius: 8px;        
+    padding: 5px;
+    background: #1e1e1e;
+    border: 1px solid #333333;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.header {
+    height: 100px;
+}
+
+.map {
+    height: 600px;
+}
+
+.btn-primary {
+    background-color: #20204b;
+    color: #e0e0e0;
+}
+
+.btn-primary:hover {
+    background-color: #1a1a3a;
+}
