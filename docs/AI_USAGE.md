@@ -17,11 +17,20 @@ Exigência do Space Apps: declarar onde e como a IA foi usada; imagem/vídeo ger
 | 14/11 | Claude (Anthropic) | Dados 2.1 | Rascunho de `pipeline/ingest.py`, `pipeline/clean.py` e `tests/test_clean.py`; leitura dos resultados (conferência 2025, piloto Pantanal, deriva MODIS); resumo `DADOS-2.1-INGEST-CLEAN.md`. Código rodado e conferido por Murilo nos dados reais | Murilo |
 | 14/11 | Claude (Anthropic) | Ciência 3.1 | Rascunho de `config/sensors.yaml`, `pipeline/bridges/base.py`, `tests/test_bridge_contract.py` e `docs/CONTRATO-CIENCIA.md`; proposta D31 | Murilo |
 | 14/11 | Claude (Anthropic) | Governança | D33 (sem bioma, 2000–2025 com 4 sensores): atualização de YAML, contratos, método, guia, plano e PDF v2.4 | Murilo |
+| 14/11 | Claude (Anthropic) | Método/Governança | Desenho da análise preditiva D35 (`PREVISAO.md`: entrada lat/lon, modelo, features, hindcast, portão) e governança v2.8 | Murilo |
 | 14/11 | Claude (Anthropic) | Ciência 3.1 | Fechamento do contrato: remoção do bioma (D33), `winner()`, `passes_reader()`, `check_config()` e novos testes | Murilo |
-| 14/11 | Claude (Anthropic) | Ciência 3.2 | Rascunho de `pipeline/bridges/m1.py`, `pipeline/bridges/check_method.py`, `tests/test_m1.py` e M1 em `tests/test_bridge_contract.py` (D32 com prior global por mês, D33); resumo `CIENCIA-3.2-M1.md` | Melissa |
-| 14/11 | Claude (Anthropic) | Dados 2.2 | Rascunho de `pipeline/grid.py` (grade 0,02° por passagem + H3 res 4 → `grid2km_pass`, `agg_monthly`) e `tests/test_grid.py`; medida de ΣFRP no `check_method` | Murilo |
+| 14/11 | Claude (Anthropic) | Ciência 3.2 | Rascunho de `bridges/m1.py` (M1, `--eval`, `--fast`, `total_ratio`), `check_method.py`, `m1_preview.py`, `check_extra.py`, `harmonize.py`, `m1_hier.py` e testes; leitura dos resultados (Brasil, res 4/5/6); D34, D36 (revista) e D37 propostas; revisão de R05/D30 | Murilo |
+| 14/11 | Claude (Anthropic) | Dados 2.2/2.3 | Rascunho de `pipeline/grid.py` (`--res`) e `tests/test_grid.py`; leitura dos resultados Brasil 2000–2025 | Murilo |
+| 14/11 | Claude (Anthropic) | Governança | Pacote v2.6 e governança consolidada v2.9 (unificação da 3.2 com D35/D36) | Murilo |
+| 14/11 | Claude (Anthropic) | Governança | v2.10: fechamento da Dados 2.3 (caminho crítico, cronograma, R14, pendências) | Murilo |
 | 14/11 | Claude (Anthropic) | Dados 2.4 | Rascunho de `pipeline/export.py` e `tests/test_export.py` (tiles res 2, validação do contrato, conservação); registro D38 | Murilo |
+| 15/11 | Claude (Anthropic) | Dados | Rascunho dos exports (`export_csv`, `export_points`, `export_frp_monthly`, `export_frp_csv`) e da validação (`audit_daily`, `spot_check`) | Murilo |
+| 15/11 | Claude (Anthropic) | Ciência/Dados | D40 `frp_harmonize.py` (ΣFRP harmonizado via M1) e D42 (`--brazil`, base de treino com contorno IBGE); propostas D39–D42 | Murilo |
+| 15/11 | Claude (Anthropic) | Governança | v2.11: fechamento da Dados 2.4, D38–D42, R06/R22/R23, contrato §11–§12 | Murilo |
+| 15/11 | Claude (Anthropic) | Dados | `pipeline/daily_harm.py` (diário harmonizado, D43/D45) e explicação do termo aditivo; governança v2.12–v2.13 (D43–D45, R24, contrato §13) | Murilo |
+| 15/11 | Claude (Anthropic) | Ciência 3.3 | Rascunho de `pipeline/bridges/m2.py` (limiar de FRP, M2, `--eval`), `tests/test_m2.py` e `docs/CIENCIA-3.3-M2.md`; prova M2 = M1 em λ = 0 e λ → ∞; correção do `--eval` (só célula-mês ativas); governança v2.14 | Murilo |
+| 15/11 | Claude (Anthropic) | Front 4.1 / D46 | Port do front do Samuel para `app/` estático: i18n EN/PT, mapa com período e hexágonos, calendário (Plot), leitor de tiles + 11 testes, `pages.yml`; correção do import do Leaflet; teste em navegador com bibliotecas e tiles reais; resumo `docs/FRONT-SISTEMA-WEB.md`; governança v2.15 | Murilo |
 <!-- Se alguém usar GitHub Copilot ou outra IA, adicionar uma linha aqui. -->
 
-## Texto para o formulário (rascunho)
+### Texto para o formulário (rascunho)
 We used Claude (Anthropic) as a pair-programmer and reviewer: planning, exploratory analysis of FIRMS data, drafting code that every team member ran and reviewed on real data, and drafting documentation. All scientific decisions were made and validated by the team. No AI-generated images, video or audio were used [update if this changes]. No NASA branding was generated or modified by AI.

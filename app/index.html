@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fire Almanac – 25 years, 4 satellites, one consistent fire record</title>
+  <meta name="description" content="Harmonized NASA MODIS + VIIRS fire calendar for Brazil, 2000–2025, in H3 hexagons." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+</head>
+<body>
+<header class="topbar">
+  <a class="logo" href="./">Fire<span>Almanac</span></a>
+  <nav class="nav">
+    <button id="lang-toggle" class="btn-lang" type="button" data-i18n="lang.switch">PT</button>
+    <a class="btn btn-ghost" href="mapa.html" data-i18n="nav.map">Open map</a>
+  </nav>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="hero-text">
+      <h1 data-i18n="hero.title"></h1>
+      <p data-i18n="hero.text"></p>
+      <a class="btn btn-primary" href="mapa.html" data-i18n="hero.cta">Open the map</a>
+    </div>
+    <!-- Grade H3 decorativa, mesma paleta cividis do mapa (acessível para daltonismo) -->
+    <svg class="hero-grid" viewBox="0 0 260 215" role="img" data-i18n-aria="hero.aria">
+      <defs><polygon id="hx" points="0,-30 26,-15 26,15 0,30 -26,15 -26,-15"/></defs>
+      <g class="hexes">
+        <use href="#hx" class="r0" transform="translate(40,40)"/><use href="#hx" class="r0" transform="translate(92,40)"/>
+        <use href="#hx" class="r1" transform="translate(144,40)"/><use href="#hx" class="r0" transform="translate(196,40)"/>
+        <use href="#hx" class="r0" transform="translate(66,85)"/><use href="#hx" class="r1" transform="translate(118,85)"/>
+        <use href="#hx" class="r2" transform="translate(170,85)"/><use href="#hx" class="r1" transform="translate(222,85)"/>
+        <use href="#hx" class="r0" transform="translate(40,130)"/><use href="#hx" class="r2" transform="translate(92,130)"/>
+        <use href="#hx" class="r3" transform="translate(144,130)"/><use href="#hx" class="r2" transform="translate(196,130)"/>
+        <use href="#hx" class="r0" transform="translate(66,175)"/><use href="#hx" class="r1" transform="translate(118,175)"/>
+        <use href="#hx" class="r2" transform="translate(170,175)"/>
+      </g>
+    </svg>
+  </section>
+
+  <section class="why">
+    <h2 data-i18n="why.title"></h2>
+    <div class="why-body">
+      <p data-i18n="why.p1"></p>
+      <p data-i18n-html="why.p2"></p>
+    </div>
+  </section>
+
+  <section class="features">
+    <h2 data-i18n="feat.title"></h2>
+    <div class="feature-list">
+      <article class="featured"><h3 data-i18n="feat.hist.t"></h3><p data-i18n="feat.hist.p"></p></article>
+      <article><h3 data-i18n="feat.place.t"></h3><p data-i18n="feat.place.p"></p></article>
+      <article><h3 data-i18n="feat.outlook.t"></h3><p data-i18n="feat.outlook.p"></p></article>
+    </div>
+  </section>
+
+  <section class="final-cta">
+    <h2 data-i18n="cta.title"></h2>
+    <a class="btn btn-primary" href="mapa.html" data-i18n="hero.cta">Open the map</a>
+  </section>
+</main>
+
+<footer><p data-i18n="foot.data"></p></footer>
+<script type="module" src="/src/main.js"></script>
+</body>
+</html>
