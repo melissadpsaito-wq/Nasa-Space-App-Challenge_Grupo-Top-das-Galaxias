@@ -6,7 +6,7 @@ from shapely.geometry import Point
 # 1. CARREGAR OS DADOS
 # =====================================================================
 print("Lendo os dados de focos de calor por H3...")
-df_focos = pd.read_csv("dadosTeste.csv", sep=";")
+df_focos = pd.read_csv("frp_harm_brasil.csv", sep=";")
 
 print("Lendo o Shapefile dos biomas...")
 biomas_gdf = gpd.read_file("./extraDataAquisition/Biomas5000.shp")
