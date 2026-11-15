@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fire Almanac – Map</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <header class="topbar">
+    <a class="logo" href="./">Fire<span>Almanac</span></a>
+    <button id="lang-toggle" class="btn-lang" type="button" data-i18n="lang.switch">PT</button>
+  </header>
+
+  <main class="container">
+    <section class="controls">
+      <div class="tab-group" role="tablist" data-i18n-aria="tab.aria">
+        <button type="button" class="btn-tab active" role="tab" aria-selected="true" data-modo="history" data-i18n="tab.history">History</button>
+        <button type="button" class="btn-tab" role="tab" aria-selected="false" data-modo="timeline" data-i18n="tab.timeline">Timeline</button>
+        <button type="button" class="btn-tab" role="tab" aria-selected="false" data-modo="outlook" data-i18n="tab.outlook">Outlook</button>
+      </div>
+      <div class="search-wrapper">
+        <input type="text" id="search-input" data-i18n-ph="search.ph" data-i18n-aria="search.aria" autocomplete="off" />
+        <ul id="autocomplete-list" class="autocomplete-dropdown"></ul>
+      </div>
+    </section>
+
+    <div class="filters-row">
+      <form id="form-loc" class="filters loc" novalidate>
+        <div class="field"><label for="lat" data-i18n="loc.lat">Latitude</label><input id="lat" inputmode="decimal" placeholder="-18.50" /></div>
+        <div class="field"><label for="lon" data-i18n="loc.lon">Longitude</label><input id="lon" inputmode="decimal" placeholder="-57.00" /></div>
+        <button type="submit" class="btn-apply btn-navy" data-i18n="loc.go">Go</button>
+      </form>
+
+      <form id="form-filtros" class="filters" novalidate>
+        <fieldset class="period">
+          <legend data-i18n="f.from">From</legend>
+          <select id="from-year" data-i18n-aria="f.year"></select>
+          <select id="from-month" data-i18n-aria="f.month"></select>
+        </fieldset>
+        <fieldset class="period">
+          <legend data-i18n="f.to">To</legend>
+          <select id="to-year" data-i18n-aria="f.year"></select>
+          <select id="to-month" data-i18n-aria="f.month"></select>
+        </fieldset>
+        <fieldset class="mode">
+          <legend data-i18n="f.mode">Values</legend>
+          <label><input type="radio" name="mode" value="harm" checked /> <span data-i18n="f.harm">Harmonized</span></label>
+          <label><input type="radio" name="mode" value="raw" /> <span data-i18n="f.raw">Raw</span></label>
+        </fieldset>
+        <button type="submit" class="btn-apply" data-i18n="f.apply">Apply</button>
+        <p id="filtro-status" role="status" aria-live="polite"></p>
+        <p class="range-note" data-i18n="f.range">Data cover Nov 2000 – Dec 2025.</p>
+      </form>
+    </div>
+
+    <div class="work">
+      <section class="map-container"><div id="map" role="region" data-i18n-aria="map.aria"></div></section>
+      <aside id="panel" class="panel" aria-live="polite"></aside>
+    </div>
+  </main>
+
+  <footer class="foot" data-i18n="foot.data"></footer>
+  <script type="module" src="/src/mapa.js"></script>
+</body>
+</html>
