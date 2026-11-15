@@ -8,6 +8,7 @@ import pandas as pd
 import pytest
 
 from pipeline.bridges import base
+from pipeline.bridges.m1 import M1
 
 
 @pytest.fixture(scope="module")
@@ -103,7 +104,8 @@ def test_season(cfg):
     assert list(base.season_of([202001, 202004, 202007, 202010, 202012], cfg)) == ["DJF", "MAM", "JJA", "SON", "DJF"]
 
 
-BRIDGES = {"global": _GlobalFactor}   # Melissa acrescenta M1, M2. Samuel testa os baselines no próprio teste com base.check_bridge (R12)
+BRIDGES = {"global": _GlobalFactor,
+           **{f"M1_lam{lam}": (lambda ctx, lam=lam: M1(lam, ctx)) for lam in (0, 5, 20, 50)}}   # Melissa acrescenta M2. Samuel testa os baselines no próprio teste com base.check_bridge (R12)
 
 
 @pytest.mark.parametrize("name", BRIDGES)
