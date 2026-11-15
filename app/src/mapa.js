@@ -5,6 +5,7 @@ import * as L from 'leaflet';
 import * as Plot from '@observablehq/plot';
 import { latLngToCell, cellToParent, cellToBoundary, polygonToCells, cellsToMultiPolygon, cellArea } from 'h3-js';
 import { RES_PRODUCT, RES_TILE, TileStore, areaSeries, slicePeriod, periodIndex, cellTotals, summarize } from './data.js';
+import { ClimaStore, areaClimatologia } from './climatologia.js';
 import { initI18n, onLang, t, monthName, ymLabel, fmt } from './i18n.js';
 import { renderCalendar, COLOR, MIN_SHOW } from './calendar.js';
 import { fireScore, typicalPeak, historicalChance, chanceAllMonths, toCSV } from './analytics.js';
@@ -14,6 +15,7 @@ const MIN_ZOOM_HEX = 7;                // abaixo disso não desenha hexágonos (
 const MAX_PARENTS = 12;                // ~12 tiles × ~1 MB no máximo por vista
 const MAX_PARENTS_AREA = 16;           // área desenhada: até ~16 tiles (~um estado médio)
 const store = new TileStore(import.meta.env.BASE_URL);
+const climaStore = new ClimaStore(import.meta.env.BASE_URL);
 const $ = (id) => document.getElementById(id);
 
 // sel = { kind: 'point', lat, lon, cells: [cell] } | { kind: 'area', ring, cells }
@@ -304,11 +306,45 @@ function regionHead(sel) {
       <span class="muted">${t('panel.drawn.u')}</span></div>`;
 }
 
+// ---------- previsão climatológica 2026 (aba Previsão) ----------
+function climaStrip(pct) {
+  const cells = pct.map((p, i) => {
+    const cls = p >= 70 ? 'hi' : p >= 40 ? 'mid' : 'lo';
+    return `<li class="${cls}" title="${monthName(i + 1)}: ${p.toFixed(1)}%"><span>${monthName(i + 1)}</span><b>${Math.round(p)}%</b></li>`;
+  }).join('');
+  return `<ul class="chance-strip">${cells}</ul>`;
+}
+
+let climaSeq = 0;
+async function renderClima() {
+  const el = $('panel');
+  const sel = state.sel;
+  if (!sel) { el.innerHTML = `<p class="panel-msg">${t('panel.empty')}</p>`; return; }
+  const my = ++climaSeq;
+  el.innerHTML = `<p class="panel-msg">${t('panel.loading')}</p>`;
+  let c;
+  try { c = await areaClimatologia(climaStore, sel.cells, cellToParent); } catch (err) {
+    if (my === climaSeq) el.innerHTML = `<p class="panel-msg">${t('panel.error')} ${err.message}</p>`;
+    return;
+  }
+  if (my !== climaSeq || state.tab !== 'outlook' || state.sel !== sel) return;
+  if (c.empty) { el.innerHTML = `<p class="panel-msg">${t('panel.nofire')}</p>`; return; }
+  const avg = sel.kind === 'area' ? `<p class="muted small">${t('clim.avg')} ${c.cellsTotal} ${t('panel.cells')}</p>` : '';
+  el.innerHTML = `
+    <div class="panel-head">${regionHead(sel)}</div>
+    <h3 class="cal-title">${t('clim.title')}</h3>
+    <p class="muted small">${t('clim.note')}</p>
+    ${avg}
+    ${climaStrip(c.pct)}
+    <p class="muted small">${t('clim.how')}</p>
+    <p class="note">${t('soon.outlook')}</p>`;
+}
+
 function renderPanel(status) {
   const el = $('panel');
   const msg = (k, extra = '') => { el.innerHTML = `<p class="panel-msg">${t(k)} ${extra}</p>`; };
   if (state.tab === 'timeline') return msg('soon.timeline');
-  if (state.tab === 'outlook') return msg('soon.outlook');
+  if (state.tab === 'outlook') return status === 'loading' ? msg('panel.loading') : renderClima();
   if (status === 'loading') return msg('panel.loading');
   if (state.error) return msg('panel.error', state.error);
   if (!state.sel) return msg('panel.empty');

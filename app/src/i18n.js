@@ -58,6 +58,9 @@ const DICT = {
     'ind.how': 'Score: percentile of the “To” month among the same month in earlier years (0–100; 60/85/95 bands). Chance: years above the median for that month in the last 10 complete years — a historical frequency, not a forecast. Typical peak: month that was most often the year’s peak. All use the harmonized monthly record.',
     'csv.btn': 'Download CSV (period)',
     'soon.timeline': 'Monthly series with the satellite seams (Terra → Aqua → S-NPP) — coming next.',
+    'clim.title': 'Climatological forecast 2026', 'clim.note': 'based on how often fire occurred in the last 10 years',
+    'clim.avg': 'Average of',
+    'clim.how': 'Each value is the share of years (2016–2025) with at least one fire detection in that month inside the ~17 km hexagon, applied to 2026. It is a historical frequency: it does not use the Random Forest model and says nothing about how large a fire will be.',
     'soon.outlook': 'Fire Outlook 2026 appears here after its validation gate (hindcast 2021–2025 vs climatology). Until then the app shows history only.',
   },
   pt: {
@@ -116,6 +119,9 @@ const DICT = {
     'ind.how': 'Score: percentil do mês “Até” entre o mesmo mês dos anos anteriores (0–100; faixas 60/85/95). Chance: anos acima da mediana daquele mês nos últimos 10 anos completos — frequência histórica, não previsão. Pico típico: mês que mais vezes foi o pico do ano. Tudo na série mensal harmonizada.',
     'csv.btn': 'Baixar CSV (período)',
     'soon.timeline': 'Série mensal com as emendas dos satélites (Terra → Aqua → S-NPP) — na próxima etapa.',
+    'clim.title': 'Previsão climatológica 2026', 'clim.note': 'baseada na frequência de fogo dos últimos 10 anos',
+    'clim.avg': 'Média de',
+    'clim.how': 'Cada valor é a fração dos anos (2016–2025) com pelo menos uma detecção de fogo naquele mês dentro do hexágono de ~17 km, aplicada a 2026. É uma frequência histórica: não usa o Random Forest e não diz o tamanho do fogo.',
     'soon.outlook': 'O Fire Outlook 2026 aparece aqui depois do portão de validação (hindcast 2021–2025 × climatologia). Até lá o app mostra só o histórico.',
   },
 };
