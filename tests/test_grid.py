@@ -63,6 +63,13 @@ def test_agg_monthly_schema_and_conservation(built):
     assert sn[202008] == 3
 
 
+def test_res5(tmp_path):
+    write_clean(tmp_path / "clean", [("SNPP", "2020-08-10 17:00", -19.005, -57.005, 30.0, "D", 0.14)])
+    grid.build(tmp_path / "clean", tmp_path / "out5", res=5)
+    a = pd.read_parquet(tmp_path / "out5" / "agg_monthly.parquet")
+    assert a.cell.map(h3.get_resolution).eq(5).all() and a.n.sum() == 1
+
+
 ROOT = Path("data/interim/pantanal")
 
 

@@ -2,7 +2,7 @@
 
 Passo 1 — "peneira": 1 linha por célula de 0,02° por passagem (passagem = sensor + ts + daynight, conferido
 pelo check_method: Brasil 2025 → 3,45). FRP da célula = máximo (D26) e soma (frp_sum, D29 ajustada).
-Passo 2 — "bairro": cada célula de 0,02° recebe a célula H3 res 4 do seu centro (D04); agregado mensal.
+Passo 2 — "bairro": cada célula de 0,02° recebe a célula H3 do seu centro (res 4 = D04; `--res 5/6` para o teste do D36); agregado mensal.
 
 Saídas (em --out):
   grid2km_pass.parquet  sensor, ts, daynight, gy, gx, cell, ym, frp_max, frp_sum, n_pix, pix_area   (DATA_DICTIONARY §5)
@@ -11,6 +11,7 @@ Saídas (em --out):
 Uso (raiz do repo):
   python -m pipeline.grid --area pantanal      # data/clean_pantanal → data/interim/pantanal/
   python -m pipeline.grid --area brasil        # data/clean → data/interim/ (caminhos do sensors.yaml)
+  python -m pipeline.grid --area brasil --res 5   # D36: data/interim/res5/ (res 4 continua em data/interim/)
 """
 from __future__ import annotations
 
@@ -84,23 +85,24 @@ def build(clean: Path, out: Path, years: list[int] | None = None, g: float = GRI
 
 
 def main(argv=None) -> None:
-    ap = argparse.ArgumentParser(description="Grade 0,02° por passagem + H3 res 4 → grid2km_pass e agg_monthly.")
+    ap = argparse.ArgumentParser(description="Grade 0,02° por passagem + H3 → grid2km_pass e agg_monthly.")
     ap.add_argument("--area", choices=AREAS, default="brasil")
     ap.add_argument("--clean", help="pasta de focos limpos (padrão pela área)")
     ap.add_argument("--out", help="pasta de saída (padrão pela área)")
     ap.add_argument("--years", help="ex.: 2025 ou 2012-2019")
+    ap.add_argument("--res", type=int, default=H3_RES, help="resolução H3 (4 = D04; 5 ou 6 = teste do D36)")
     a = ap.parse_args(argv)
     clean, out = (Path(x) for x in AREAS[a.area])
-    clean, out = Path(a.clean or clean), Path(a.out or out)
+    clean, out = Path(a.clean or clean), Path(a.out or (out if a.res == H3_RES else out / f"res{a.res}"))
     years = None
     if a.years:
         lo, _, hi = a.years.partition("-")
         years = list(range(int(lo), int(hi or lo) + 1))
 
     t0 = time.time()
-    s = build(clean, out, years)
+    s = build(clean, out, years, res=a.res)
     pd.set_option("display.width", 160)
-    print(f"{clean} → {out} · {time.time() - t0:.0f} s · conservação OK\n")
+    print(f"{clean} → {out} · H3 res {a.res} · {time.time() - t0:.0f} s · conservação OK\n")
     print(s.to_string(index=False))
     tot = s.groupby("sensor")[["clean_rows", "pass_cells"]].sum()
     tot["pixels_per_cell"] = tot.clean_rows / tot.pass_cells
