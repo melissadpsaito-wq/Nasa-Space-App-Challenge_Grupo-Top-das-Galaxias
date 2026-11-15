@@ -13,3 +13,4 @@ pytest
 pyyaml
 pyarrow
 gunicorn
+Flask
