@@ -8,16 +8,21 @@ import { RES_PRODUCT, RES_TILE, TileStore, areaSeries, slicePeriod, periodIndex,
 import { initI18n, onLang, t, monthName, ymLabel, fmt } from './i18n.js';
 import { renderCalendar, COLOR, MIN_SHOW } from './calendar.js';
 import { fireScore, typicalPeak, historicalChance, chanceAllMonths, toCSV } from './analytics.js';
+import { ForecastStore, areaOutlook, gateStatus, outlookSummary } from './forecast.js';
 
 const FIRST = 200011, LAST = 202512;   // série nov/2000–dez/2025 (D33)
 const MIN_ZOOM_HEX = 7;                // abaixo disso não desenha hexágonos (peso dos tiles)
 const MAX_PARENTS = 12;                // ~12 tiles × ~1 MB no máximo por vista
 const MAX_PARENTS_AREA = 16;           // área desenhada: até ~16 tiles (~um estado médio)
 const store = new TileStore(import.meta.env.BASE_URL);
+const fstore = new ForecastStore(import.meta.env.BASE_URL);   // Fire Outlook 2026 (D35, D48)
+// Só no `npm run dev`: ?force-outlook mostra o Outlook mesmo reprovado no portão (para conferir a tela; nunca no site).
+const FORCE_OUTLOOK = import.meta.env.DEV && new URLSearchParams(location.search).has('force-outlook');
 const $ = (id) => document.getElementById(id);
 
 // sel = { kind: 'point', lat, lon, cells: [cell] } | { kind: 'area', ring, cells }
-const state = { from: FIRST, to: LAST, mode: 'harm', tab: 'history', sel: null, series: null, error: null };
+const state = { from: FIRST, to: LAST, mode: 'harm', tab: 'history', sel: null, series: null, error: null,
+  fc: null, fcSel: null, fcErr: null, skill: undefined };
 
 initI18n();
 
@@ -65,6 +70,7 @@ document.querySelectorAll('.btn-tab').forEach((b) => b.addEventListener('click',
   document.querySelectorAll('.btn-tab').forEach((x) => { x.classList.toggle('active', x === b); x.setAttribute('aria-selected', x === b); });
   state.tab = b.dataset.modo;
   renderPanel();
+  if (state.tab === 'outlook') loadOutlook();
 }));
 
 // ---------- mapa ----------
@@ -132,6 +138,26 @@ async function loadSelection(sel, highlight) {
   } catch (err) {
     if (my !== selSeq) return;
     state.error = err.message;
+  }
+  renderPanel();
+  if (state.tab === 'outlook') loadOutlook();
+}
+
+// ---------- Fire Outlook 2026 (D35, D48): carrega só quando a aba é aberta ----------
+let fcSeq = 0;
+async function loadOutlook() {
+  const sel = state.sel;
+  if (!sel || state.fcSel === sel) return;
+  const my = ++fcSeq;
+  Object.assign(state, { fc: null, fcSel: sel, fcErr: null });
+  renderPanel();
+  try {
+    const [skill, fc] = await Promise.all([fstore.skill(), areaOutlook(fstore, sel.cells, cellToParent, RES_TILE)]);
+    if (my !== fcSeq) return;
+    Object.assign(state, { skill, fc });
+  } catch (err) {
+    if (my !== fcSeq) return;
+    state.fcErr = err.message;
   }
   renderPanel();
 }
@@ -308,7 +334,7 @@ function renderPanel(status) {
   const el = $('panel');
   const msg = (k, extra = '') => { el.innerHTML = `<p class="panel-msg">${t(k)} ${extra}</p>`; };
   if (state.tab === 'timeline') return msg('soon.timeline');
-  if (state.tab === 'outlook') return msg('soon.outlook');
+  if (state.tab === 'outlook') return renderOutlook(el, msg, status);
   if (status === 'loading') return msg('panel.loading');
   if (state.error) return msg('panel.error', state.error);
   if (!state.sel) return msg('panel.empty');
@@ -349,6 +375,79 @@ function renderPanel(status) {
     <p class="note">${t(state.sel.kind === 'area' ? 'panel.note.area' : 'panel.note')}</p>`;
   renderCalendar($('calendar'), s, state.mode);
   $('csv-btn').addEventListener('click', () => downloadCSV(s));
+}
+
+// ---------- aba Outlook ----------
+const pct = (p) => `${Math.round(p * 100)}%`;
+const unitLabel = (u) => t(`fc.unit.${u}`);
+
+function skillLine(skill) {
+  const o = skill?.overall;
+  if (!o) return '';
+  const s = (v) => `${v >= 0 ? '+' : ''}${Math.round(v * 100)}%`;
+  return `${t('fc.skill')}: <b>${s(o.bss_clim)}</b> ${t('fc.vsclim')} · <b>${s(o.bss_d27)}</b> ${t('fc.vsd27')} · AUC ${fmt(o.auc)} · ${t('fc.cov')} ${pct(o.coverage_80)}`;
+}
+
+/** Plano B (R18): chance histórica D27 dos 12 meses, já calculada na série harmonizada. */
+function planB(reasonKey, skill) {
+  const s = state.series;
+  const strip = s && !s.empty ? chanceStrip(chanceAllMonths(s)) : `<p class="panel-msg">${t('panel.nofire')}</p>`;
+  return `<div class="fc-banner warn">${t(reasonKey)}${skill ? `<br><small>${skillLine(skill)}</small>` : ''}</div>${strip}
+    <p class="muted small">${t('ind.how')}</p>`;
+}
+
+function outlookChart(el, o) {
+  const rows = Array.from({ length: 12 }, (_, i) => ({ m: i + 1, q10: o.q10[i], q50: o.q50[i], q90: o.q90[i], normal: o.normal?.[i], p: o.p[i] }));
+  el.replaceChildren(Plot.plot({
+    width: Math.max(320, el.clientWidth), height: 220, marginLeft: 52,
+    x: { domain: [0.6, 12.4], ticks: rows.map((r) => r.m), tickFormat: (m) => monthName(m), label: null },
+    y: { label: unitLabel(o.unit), grid: true, nice: true },
+    marks: [
+      Plot.areaY(rows, { x: 'm', y1: 'q10', y2: 'q90', fill: '#a59c74', fillOpacity: 0.35, curve: 'monotone-x' }),
+      Plot.lineY(rows, { x: 'm', y: 'q50', stroke: '#00204d', strokeWidth: 2, marker: 'circle', curve: 'monotone-x' }),
+      o.normal ? Plot.dot(rows, { x: 'm', y: 'normal', symbol: 'diamond', stroke: '#ff5a1f', fill: '#fff', r: 4 }) : null,
+      Plot.tip(rows, Plot.pointerX({ x: 'm', y: 'q50', title: (r) => `${monthName(r.m)} 2026\n${t('fc.pabove')}: ${pct(r.p)}\n${t('fc.expected')}: ${fmt(r.q50)} (${fmt(r.q10)}–${fmt(r.q90)})${r.normal != null ? `\n${t('fc.normal')}: ${fmt(r.normal)}` : ''}` })),
+    ],
+  }));
+}
+
+function renderOutlook(el, msg, status) {
+  if (status === 'loading') return msg('panel.loading');
+  if (!state.sel) return msg('fc.empty');
+  if (state.fcErr) return msg('panel.error', state.fcErr);
+  if (state.fcSel !== state.sel || state.skill === undefined) return msg('panel.loading');
+  const gate = gateStatus(state.skill);
+  const head = `<div class="panel-head">${regionHead(state.sel)}<div><span class="label">${t('fc.horizon')}</span><strong>${t('fc.horizon.v')}</strong></div></div>`;
+  if (gate === 'none') { el.innerHTML = head + planB('fc.none'); return; }
+  if (gate === 'failed' && !FORCE_OUTLOOK) { el.innerHTML = head + planB('fc.failed', state.skill); return; }
+  const o = state.fc;
+  if (!o || o.empty) { el.innerHTML = head + planB('fc.nocell', state.skill); return; }
+  const r = outlookSummary(o);
+  const u = unitLabel(o.unit);
+  const strip = Array.from({ length: 12 }, (_, i) => {
+    const p = o.p[i], cls = p >= 0.7 ? 'hi' : p >= 0.4 ? 'mid' : 'lo';
+    return `<li class="${cls}" title="${monthName(i + 1)}: ${t('fc.pabove')} ${pct(p)} · ${t('fc.expected')} ${fmt(o.q50[i])} (${fmt(o.q10[i])}–${fmt(o.q90[i])}) ${u}"><span>${monthName(i + 1)}</span><b>${pct(p)}</b></li>`;
+  }).join('');
+  const rows = Array.from({ length: 12 }, (_, i) => `<tr><td>${monthName(i + 1)}</td><td>${pct(o.p[i])}</td>
+    <td>${fmt(o.q50[i])} <span class="muted">(${fmt(o.q10[i])}–${fmt(o.q90[i])})</span></td><td>${o.normal ? fmt(o.normal[i]) : '—'}</td></tr>`).join('');
+  el.innerHTML = `${head}
+    ${gate === 'failed' ? `<div class="fc-banner warn">${t('fc.forced')}</div>` : ''}
+    <div class="fc-banner">${skillLine(state.skill)}</div>
+    <div class="kpis ind">
+      <div class="kpi"><span class="label">${t('fc.top')}</span><b>${monthName(r.topP.month)}</b><span class="muted">${t('fc.pabove')} ${pct(r.topP.p)}</span></div>
+      <div class="kpi"><span class="label">${t('fc.peak')}</span><b>${monthName(r.peak.month)}</b><span class="muted">${fmt(r.peak.q50)} ${u}</span></div>
+      <div class="kpi"><span class="label">${t('fc.total')}</span><b>${fmt(r.total.q50)}</b><span class="muted">${fmt(r.total.q10)}–${fmt(r.total.q90)} ${u}${r.total.normal != null ? ` · ${t('fc.normal')} ${fmt(r.total.normal)}` : ''}</span></div>
+    </div>
+    <h3 class="cal-title">${t('fc.strip')}</h3>
+    <ul class="chance-strip fc-strip">${strip}</ul>
+    <div id="fc-chart" class="calendar"></div>
+    <p class="muted small">${t('fc.legend')}</p>
+    <details class="fc-table"><summary>${t('fc.table')}</summary>
+      <table><thead><tr><th>${t('f.month')}</th><th>${t('fc.pabove')}</th><th>${t('fc.expected')} (${u})</th><th>${t('fc.normal')}</th></tr></thead><tbody>${rows}</tbody></table>
+    </details>
+    ${o.coverage < 1 ? `<p class="muted small">${t('fc.coverage')} ${o.cellsWith}/${o.cellsTotal}.</p>` : ''}
+    <p class="note">${t(state.sel.kind === 'area' ? 'fc.note.area' : 'fc.note')}</p>`;
+  outlookChart($('fc-chart'), o);
 }
 
 onLang(() => { fillSelects(); $('filtro-status').textContent = ''; drawRender(); refreshMap(); renderPanel(); });

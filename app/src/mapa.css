@@ -119,3 +119,10 @@ code { font-size: .78rem; }
 .chance-strip li.na { color: var(--muted); }
 .btn-csv { margin-top: 10px; }
 @media (max-width: 520px) { .chance-strip { grid-template-columns: repeat(6, 1fr); } }
+
+/* Fire Outlook 2026 (D35, D48) */
+.fc-banner { border-left: 4px solid var(--navy); background: #f1f4f8; padding: 8px 10px; border-radius: 6px; margin: 8px 0; font-size: .85rem; }
+.fc-banner.warn { border-left-color: var(--fire); background: #fff6ef; }
+.fc-table table { width: 100%; border-collapse: collapse; font-size: .82rem; margin-top: 6px; }
+.fc-table th, .fc-table td { text-align: left; padding: 3px 6px; border-bottom: 1px solid var(--line); }
+.fc-table summary { cursor: pointer; font-weight: 600; margin: 6px 0; }
