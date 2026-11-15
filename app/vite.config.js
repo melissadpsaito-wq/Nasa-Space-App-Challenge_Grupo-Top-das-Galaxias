@@ -6,7 +6,7 @@ import { resolve } from 'node:path';
 const REPO_BASE = '/Nasa-Space-App-Challenge_Grupo-Top-das-Galaxias/';
 
 export default defineConfig(({ command }) => ({
-  base: command === 'build' ? (process.env.VITE_BASE ?? REPO_BASE) : '/',
+  base: process.env.BASE_PATH ?? '/Nasa-Space-App-Challenge_Grupo-Top-das-Galaxias',
   build: {
     outDir: 'dist',
     sourcemap: false,
