@@ -59,3 +59,27 @@ Melissa lê `winner` por ponte; ninguém edita λ à mão. Regra do CP3: `beats_
 | Estratos do limiar (M2) | trimestre × dia/noite, Brasil inteiro (8 estratos) |
 | `validation.json` | sem `by_biome`; acrescentar `by_season` (opcional) |
 | Nova saída Samuel | `consistency_4sat.json`: para cada par de sensores na sobreposição, razão harmonizado/harmonizado por ano (esperado ≈ 1) |
+
+## 9. Previsão 2026 (Samuel → Murilo, Luana)
+Fonte: `pipeline/forecast/rf_outlook.py` → `data/processed/forecast/forecast_2026.csv` + `forecast_skill.json` → `pipeline/forecast/export_forecast.py` → tiles `app/public/data/forecast_<pai>.json` + `forecast_skill.json`.
+
+| Campo | Significado |
+|---|---|
+| `cell` | hexágono H3 res. 5 (31.946 células; `export_forecast --expect-cells 31946` falha se o total divergir) |
+| `month` | mês de 2026 (1–12) |
+| `p` | fração das árvores com previsão > `normal`, em [0, 1] |
+| `q10`, `q50`, `q90` | quantis das previsões das árvores, na unidade `unit`, ≥ 0 |
+| `unit` | unidade de `q10/q50/q90` e `normal`; hoje `frp_mw` (ΣFRP harmonizado mensal da célula, MW, D40). Passado ao exportador por `--unit` e gravado nos tiles; o app não deve assumir a unidade |
+| `normal` | mediana do ΣFRP harmonizado da célula naquele mês, 2003..Y−1, na mesma unidade de `unit`. É o limiar de `p`. Quando vale 0, `p` significa "qualquer fogo acima de zero" |
+
+**Portão (D35).** `forecast_skill.json` traz o resultado do hindcast; o exportador avalia `bss_clim_gt_0`, `bss_d27_gt_0`, `log_err_beats_clim_3_of_5` e `all_test_years_present`. Aprovado: a aba mostra o Outlook. Reprovado (estado atual): a aba mostra a chance histórica (D27, R18) e o Outlook só aparece com `?force-outlook`, e apenas em desenvolvimento.
+
+**Agregação por área desenhada (proposta, decisão nova a numerar).** O app consulta valores pré-calculados por célula; não recalcula o modelo. Células da área = as de centroide dentro do polígono. Para `unit = frp_mw`:
+| Valor | Regra |
+|---|---|
+| `q10/q50/q90` da área | soma das células, rotulada "ΣFRP da área (MW)". Os quantis somados são aproximação (os quantis de uma soma não são a soma dos quantis) e devem ser rotulados como tal |
+| `normal` da área | soma dos `normal` das células |
+| `p` da área | "pelo menos uma célula acima do normal": 1 − ∏(1 − pᵢ), assumindo independência (o que superestima a chance); ou média dos pᵢ. Escolher uma e rotular na interface |
+| Limite de tamanho | área máxima em número de células, a definir, para o app não somar milhares de células |
+| Fora da grade | ponto ou área sem célula no Brasil: mensagem clara, nunca zero |
+Enquanto o portão estiver reprovado, esta agregação só vale para o Outlook em modo de desenvolvimento; a aba pública usa a chance histórica.
