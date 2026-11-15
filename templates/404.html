@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Fire Almanac</title>
+  <script>
+    const base = location.hostname.endsWith("github.io")
+      ? "/" + location.pathname.split("/")[1]
+      : "";
+    sessionStorage.setItem("redirect", location.pathname + location.search + location.hash);
+    location.replace(base + "/");
+  </script>
+</head>
+<body></body>
+</html>
