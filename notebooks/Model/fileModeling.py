@@ -5,13 +5,12 @@ from shapely.geometry import Point
 # =====================================================================
 # 1. CARREGAR OS DADOS
 # =====================================================================
-print("Lendo os dados de focos de calor por H3...")
-df_focos = pd.read_csv("frp_harm_brasil.csv", sep=";")
+print("Lendo os dados de focos de calor por H3 (10M linhas)...")
+df_focos = pd.read_csv("frp_harm_brasil.csv", sep=",")
 
 print("Lendo o Shapefile dos biomas...")
 biomas_gdf = gpd.read_file("./extraDataAquisition/Biomas5000.shp")
 
-# Define o padrão oficial do IBGE (SIRGAS 2000) caso o shapefile venha sem CRS
 if biomas_gdf.crs is None:
   biomas_gdf.set_crs(epsg=4674, inplace=True)
 
@@ -19,7 +18,7 @@ print("Lendo o dataset de clima da NASA...")
 df_clima = pd.read_csv("./extraDataAquisition/clima_biomas_nasa.csv", sep=";")
 
 # =====================================================================
-# 2. ASSOCIAR CADA CENTRÓIDE DE H3 AO SEU RESPECTIVO BIOMA
+# 2. ASSOCIAR CADA CENTRÓIDE AO BIOMA (COM FALLBACK PARA O MAIS PRÓXIMO)
 # =====================================================================
 print("Realizando o cruzamento espacial (H3 -> Bioma)...")
 
@@ -29,20 +28,42 @@ gdf_focos = gpd.GeoDataFrame(df_focos, geometry=geometry, crs="EPSG:4674")
 if biomas_gdf.crs != gdf_focos.crs:
   biomas_gdf = biomas_gdf.to_crs(gdf_focos.crs)
 
-# Mantemos 'how="left"' para não perder as linhas antes da checagem
+# Passo A: Cruzamento estrito dentro do bioma
 gdf_enriquecido = gpd.sjoin(
     gdf_focos, biomas_gdf, how="left", predicate="within"
 )
 gdf_enriquecido = gdf_enriquecido.rename(columns={"NOM_BIOMA": "bioma"})
 
+# Passo B: Resgatar pontos que ficaram sem bioma (borda/costa) usando o mais próximo
+mask_sem_bioma = gdf_enriquecido["bioma"].isna()
+if mask_sem_bioma.any():
+  print(
+      f"⚠️ {mask_sem_bioma.sum()} ponto(s) caíram na borda. Resgatando"
+      " pelo bioma mais próximo (sjoin_nearest)..."
+  )
+  # Faz o join nearest apenas com os pontos órfãos
+  gdf_proximo = gpd.sjoin_nearest(
+      gdf_focos[mask_sem_bioma], biomas_gdf, how="left", distance_col="dist"
+  )
+  # Atribui o bioma encontrado
+  col_nome_bioma = (
+      "NOM_BIOMA" if "NOM_BIOMA" in gdf_proximo.columns else "bioma"
+  )
+  gdf_enriquecido.loc[mask_sem_bioma, "bioma"] = gdf_proximo[
+      col_nome_bioma
+  ].values
+
+# Remove qualquer caso extremo que ainda tenha persistido nulo
+gdf_enriquecido = gdf_enriquecido.dropna(subset=["bioma"])
+
 colunas_para_manter = ["cell", "lat", "lon", "year", "month", "monthly_frp", "bioma"]
 df_para_merge = pd.DataFrame(gdf_enriquecido[colunas_para_manter])
 
-
 # =====================================================================
-# 3. NORMALIZAR NOMES E FAZER O MERGE COM O CLIMA DA NASA
+# 3. NORMALIZAR E GARANTIR TIPOS PARA O MERGE DO CLIMA
 # =====================================================================
 print("Fazendo o merge com as variáveis climáticas da NASA...")
+
 
 def limpar_nome_bioma(serie):
   return (
@@ -54,44 +75,56 @@ def limpar_nome_bioma(serie):
       .str.replace(" ", "_")
   )
 
-# Padroniza nomes para: amazonia, caatinga, cerrado, mata_atlantica, pampa, pantanal
-df_para_merge["bioma_limpo"] = limpar_nome_bioma(df_para_merge["bioma"])
-df_clima["bioma_limpo"] = limpar_nome_bioma(df_clima["bioma"])
 
-# Renomeia temp max para temp_max para manter o padrão snake_case
-df_clima = df_clima.rename(columns={"temp max": "temp_max"})
+df_para_merge["bioma_limpo"] = limpar_nome_bioma(df_para_merge["bioma"])
+df_clima["bioma_limpo"] = limpar_nome_bioma(
+    df_clima["bioma"]
+    if "bioma" in df_clima.columns
+    else df_clima["NOM_BIOMA"]
+)
+
+# 🚀 Blindagem de Tipos: Garante que ano e mês sejam inteiros idênticos em ambos
+df_para_merge["year"] = df_para_merge["year"].astype(int)
+df_para_merge["month"] = df_para_merge["month"].astype(int)
+df_clima["ano"] = df_clima["ano"].astype(int)
+df_clima["mes"] = df_clima["mes"].astype(int)
+
+# Padroniza nome da coluna de temperatura máxima
+if "temp max" in df_clima.columns:
+  df_clima = df_clima.rename(columns={"temp max": "temp_max"})
 
 df_final = pd.merge(
     df_para_merge.drop(columns=["bioma"]),
     df_clima[["bioma_limpo", "ano", "mes", "precipitacao", "umidade", "temp_max"]],
     left_on=["bioma_limpo", "year", "month"],
     right_on=["bioma_limpo", "ano", "mes"],
-    how="left",
+    how="inner",  # Inner para garantir que só passa quem encontrou o clima correspondente
 )
 
-# Remove colunas duplicadas de ano/mês que vieram do df_clima
 df_final = df_final.drop(columns=["ano", "mes"])
+df_final["bioma"] = df_final["bioma_limpo"]
+df_final = df_final.drop(columns=["bioma_limpo"])
 
 # =====================================================================
-# 4. APLICAR ONE-HOT ENCODING E FILTRAR LINHAS SEM BIOMA
+# 4. APLICAR ONE-HOT ENCODING
 # =====================================================================
-print("Aplicando One-Hot Encoding nos biomas...")
+print("Aplicando One-Hot Encoding...")
+df_final = pd.get_dummies(
+    df_final, columns=["bioma"], prefix="", prefix_sep="", dtype=int
+)
 
-df_final = pd.get_dummies(df_final, columns=["bioma_limpo"], prefix="", prefix_sep="", dtype=int)
-
-todos_biomas = ["amazonia", "caatinga", "cerrado", "mata_atlantica", "pampa", "pantanal"]
+todos_biomas = [
+    "amazonia",
+    "caatinga",
+    "cerrado",
+    "mata_atlantica",
+    "pampa",
+    "pantanal",
+]
 for b in todos_biomas:
   if b not in df_final.columns:
     df_final[b] = 0
 
-linhas_antes = len(df_final)
-df_final = df_final[df_final[todos_biomas].sum(axis=1) > 0]
-linhas_removidas = linhas_antes - len(df_final)
-
-if linhas_removidas > 0:
-  print(f"🗑️ {linhas_removidas} linha(s) com todos os biomas zerados foram removidas com sucesso.")
-
-# Reordena as colunas exatamente na sequência solicitada
 ordem_colunas = [
     "cell",
     "lat",
@@ -99,7 +132,7 @@ ordem_colunas = [
     "year",
     "month",
     "monthly_frp",
-    "precipitacao",  # (junto com o merge do clima)
+    "precipitacao",
     "umidade",
     "temp_max",
     "amazonia",
@@ -109,7 +142,6 @@ ordem_colunas = [
     "pampa",
     "pantanal",
 ]
-
 df_final = df_final[ordem_colunas]
 
 # =====================================================================
