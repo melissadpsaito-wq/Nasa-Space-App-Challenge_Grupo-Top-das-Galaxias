@@ -135,7 +135,7 @@ def score(pred: np.ndarray, real: np.ndarray) -> dict:
 
 
 def _collect(model, A, B, fit_years, eval_years, cfg) -> pd.DataFrame:
-    """Ajusta em fit_years, prevê eval_years; devolve célula-mês ativas (A > 0 ou B > 0) com pred e real."""
+    """Ajusta em fit_years, prevê eval_years; devolve TODAS as célula-mês com pred, real e a coluna `active`."""
     model.fit(A, B, fit_years)
     months = base.scoring_months(cfg, eval_years)
     Ay, By = A[A.ym.isin(months)], B[B.ym.isin(months)]
@@ -144,22 +144,33 @@ def _collect(model, A, B, fit_years, eval_years, cfg) -> pd.DataFrame:
     real = base.densify(By, cells, months).rename(columns={"n": "real"})
     a = base.densify(Ay, cells, months).rename(columns={"n": "a"})
     d = real.merge(a, on=["cell", "ym"]).merge(pred, on=["cell", "ym"], how="left").fillna({"n_pred": 0.0})
-    return d[(d.a > 0) | (d.real > 0)]
+    return d.assign(active=(d.a > 0) | (d.real > 0))
 
 
-def evaluate(A, B, cfg, bridge_id, lams) -> pd.DataFrame:
-    """Bruto × taxa única × M1(λ) em: teste (anos de test do YAML) e LOYO nos anos de ajuste."""
+def evaluate(A, B, cfg, bridge_id, lams, loyo: bool = True, hier: bool = False) -> pd.DataFrame:
+    """Bruto × taxa única × M1(λ) em: teste (anos de test do YAML) e, se loyo, LOYO nos anos de ajuste."""
     ctx = base.Context(cfg=cfg)
     fy, ty = base.fit_years(cfg, bridge_id), base.test_years(cfg, bridge_id)
     makers = {"raw": lambda: _Raw(ctx), "global": lambda: _Global(ctx),
               **{f"M1 λ={lam:g}": (lambda lam=lam: M1(lam, ctx)) for lam in lams}}
+    if hier:                                                   # D37 (proposta): pai res 4 dá o total
+        from pipeline.bridges.m1_hier import M1Hier
+        makers.update({f"M1H λ={lam:g}": (lambda lam=lam: M1Hier(lam, ctx)) for lam in lams})
     rows = []
     for name, make in makers.items():
         if ty:
-            rows.append({"método": name, "split": f"teste {ty[0]}–{ty[-1]}", **score(*_xy(_collect(make(), A, B, fy, ty, cfg)))})
-        loyo = pd.concat([_collect(make(), A, B, [t for t in fy if t != y], [y], cfg) for y in fy])
-        rows.append({"método": name, "split": f"LOYO {fy[0]}–{fy[-1]}", **score(*_xy(loyo))})
+            rows.append({"método": name, "split": f"teste {ty[0]}–{ty[-1]}", **_score(_collect(make(), A, B, fy, ty, cfg))})
+        if loyo:
+            d = pd.concat([_collect(make(), A, B, [t for t in fy if t != y], [y], cfg) for y in fy])
+            rows.append({"método": name, "split": f"LOYO {fy[0]}–{fy[-1]}", **_score(d)})
     return pd.DataFrame(rows)
+
+
+def _score(d: pd.DataFrame) -> dict:
+    """Métricas nas célula-mês ativas + total_ratio = Σpred/ΣB em TODAS (inclui o termo aditivo posto onde B = 0)."""
+    out = score(*_xy(d[d.active]))
+    out["total_ratio"] = float(d.n_pred.sum() / max(d.real.sum(), 1))
+    return out
 
 
 def _xy(d: pd.DataFrame):
@@ -181,6 +192,8 @@ def main(argv=None) -> None:
     ap.add_argument("--out", default="data/interim")
     ap.add_argument("--config", default=str(base.CONFIG))
     ap.add_argument("--eval", action="store_true", help="compara bruto × taxa única × M1 (λ de lambda_grid + 0) por célula-mês")
+    ap.add_argument("--hier", action="store_true", help="com --eval em res 5/6: inclui o M1 hierárquico (total do pai res 4, D37)")
+    ap.add_argument("--fast", action="store_true", help="com --eval: só teste 2020–21 e só M1 λ=20 (3 ajustes; para res 5/6)")
     a = ap.parse_args(argv)
 
     cfg = base.load_config(a.config)
@@ -188,10 +201,10 @@ def main(argv=None) -> None:
     if a.eval:
         agg_path = Path(a.agg or cfg["inputs"]["agg_monthly"])
         data = _load_agg(agg_path, [br["from"], br["to"]])
-        lams = [0, *cfg["lambda_grid"]]
-        r = evaluate(data[br["from"]], data[br["to"]], cfg, a.bridge, lams)
+        lams = [20] if a.fast else [0, *cfg["lambda_grid"]]
+        r = evaluate(data[br["from"]], data[br["to"]], cfg, a.bridge, lams, loyo=not a.fast, hier=a.hier)
         pd.set_option("display.width", 160)
-        print(f"Conferência {a.bridge} · {agg_path} · célula-mês ativas (A > 0 ou B > 0); menor consistency = melhor\n")
+        print(f"Conferência {a.bridge} · {agg_path} · métricas em célula-mês ativas (A > 0 ou B > 0); total_ratio em todas; menor consistency = melhor\n")
         for split, g in r.groupby("split", sort=False):
             print(f"{split}:\n" + g.drop(columns="split").round(3).to_string(index=False) + "\n")
         out = Path(a.out) / f"m1_eval_{a.bridge}.csv"

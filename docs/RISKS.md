@@ -7,7 +7,7 @@
 | R03 | Calibração ruim (métrica não melhora vs bruto) | Média | Alto | Validação sáb 22:00 | Fator por bioma × mês; declarar limitação | Ciência |
 | R04 | AI1 atrasa o núcleo | Média | Médio | Dom 10:00 sem resultado | Sai do núcleo (D15) | Ciência (Samuel) |
 | R05 | Deriva de órbita Terra/Aqua distorce pontes | Média | Médio | Resíduo cresce com o ano | Janelas de ajuste anteriores à deriva | Ciência (Melissa) |
-| R06 | JSON do app > 5 MB | Baixa | Médio | Tamanho do export | H3 res 3 ou tiles | Dados |
+| R06 | JSON do app > 5 MB | Baixa | Médio | Tamanho do export · **Acionado 14/11 22:47**: arquivo único 100,5 MB → 128 tiles res 2, máx 1,35 MB, total 101 MB (D38) | H3 res 3 ou tiles | Dados |
 | R07 | Integração Dados × Front trava | Média | Alto | Contrato não fixado às 10:00 | Front com dados falsos no formato do contrato | Dados + Front |
 | R08 | Demo > 30 s, sem legenda em inglês ou link privado | Baixa | Crítico (desclassifica) | Checklist | Revisão por 2 pessoas + janela anônima | Murilo + Luana |
 | R09 | Chave da API vazada no repositório | Baixa | Médio | Revisão de PR | `.env` no `.gitignore`; chave só em GitHub Secrets | Todos |
