@@ -5,6 +5,7 @@
 zips/
 data/raw/
 data/clean/
+data/clean_*/
 data/interim/
 *.zip
 # python
@@ -18,5 +19,3 @@ app/dist/
 # sistema
 .DS_Store
 Thumbs.db
-
-data/clean_*/

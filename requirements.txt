@@ -4,11 +4,8 @@ pyarrow
 duckdb
 numpy
 h3>=4
-geopandas
 scikit-learn
 scipy
 pyyaml
 python-dotenv
 pytest
-pyyaml
-pyarrow

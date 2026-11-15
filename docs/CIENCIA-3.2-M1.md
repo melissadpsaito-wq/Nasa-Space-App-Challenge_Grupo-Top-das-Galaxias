@@ -109,7 +109,22 @@ Leitura:
 - Sem degrau na grade em 2020 (3,96 → 3,98) → a deriva do Aqua vista no bruto (R05) não aparece depois da peneira. D30 continua útil como teste fora do tempo, mas a justificativa muda (Capitão).
 - Bruto com consistency = ln 3 (1,099): a célula-mês mediana tem A = 0 e B ≈ 2.
 
-## 7. Pendências
+## 7. Achado — de onde vêm os fogos extras do VIIRS (`check_extra`, Brasil 2025, sáb 19:26)
+Fogo S-NPP = célula 0,02° × passagem (390.427); distância à detecção Aqua mais próxima no mesmo turno.
+| Classe | Janela dia: % / contribuição p/ razão | Janela mês: % / contribuição | FRP mediano (mês) | Noite (mês) |
+|---|---|---|---|---|
+| Mesmo fogo (≤ 2 km) | 16,8% / 0,58 | **35,4% / 1,22** | 8,2 MW | 19% |
+| Vizinhança (2–10 km) | 7,6% / 0,26 | **29,8% / 1,03** | 5,9 MW | 17% |
+| Isolado (10–50 km) | 19,9% / 0,69 | 26,1% / 0,90 | 3,9 MW | 37% |
+| Muito isolado (> 50 km) | 55,8% / 1,93 | **8,8% / 0,30** | 1,6 MW | 77% |
+Casamento inverso (fogos do Aqua com pixel S-NPP a ≤ 2 km / ≤ 10 km): dia 47,8% / 60,9% (D 44,5% · N 89,0%) · mês 68,7% / **92,5%**.
+Leitura:
+- No mesmo dia os dois satélites muitas vezes não olham o mesmo lugar (de dia só 44,5% dos fogos do Aqua têm par; à noite 89%): faixa diferente e passagem do Aqua mais tarde (deriva). O "muito isolado" de 56% no dia era cobertura, não sensibilidade.
+- No mês: **65% dos fogos do S-NPP estão a ≤ 10 km de um fogo que o MODIS registrou** (o VIIRS vê mais fogos nas mesmas áreas de queima); 26% a 10–50 km (mesma região, escala do bairro H3 ~45 km); só **9% em lugares sem nenhum fogo MODIS a 50 km no mês** — muito fracos (1,6 MW), 77% noturnos, mais na chuva (MAM 23%, DJF 16% × SON 5%). Contribuem 0,30 dos 3,45.
+- Para o M1: ~91% dos fogos extras caem a ≤ 50 km de fogo MODIS no mesmo mês → bairro de 45 km × mês é escala adequada; o termo aditivo cobre os ~9% invisíveis ao MODIS.
+- Frase para o pitch: "9 em cada 10 fogos extras do VIIRS estão nas mesmas regiões de queima que o MODIS já via; só ~9% são fogos fracos, quase sempre noturnos, em lugares onde o MODIS não registrou nada no mês."
+
+## 8. Pendências
 | Item | Dono |
 |---|---|
 | PR `ciencia/m1` → `main` (inclui Dados 2.2 `grid.py`) | Murilo |
@@ -118,8 +133,8 @@ Leitura:
 | Aprovar D30, D31, D32 (D32 já com prior global por D33) | Capitão |
 | λ vencedor via `validation.json` (CP3, 23:30) | Samuel |
 
-## 8. Leitura esperada
+## 9. Leitura esperada
 k(c,M) de meses com pouco fogo sai abaixo do k global (os meses com A = 0 vão para o aditivo). Com λ = 0 o total do ajuste é conservado. No sintético com deriva de +20% em 2020+, o teste 2020–2021 fica em Σpred/ΣB ≈ 0,85 — é a assinatura que esperamos ver no Pantanal se R05 for real (Aqua 5,94 → 7,15).
 
-## 9. Diferenças em relação ao rascunho das 15:50
+## 10. Diferenças em relação ao rascunho das 15:50
 Bioma removido (D33): k_bioma/a_bioma → k_global(M)/a_global(M); sem `cell_biome`. Coluna `add` → `add_term` (`add` colide com `DataFrame.add`). Novos: CLI usa `winner()` (R8), `--agg` para o arquivo do Pantanal, teste de deriva e teste do `check_method`.
