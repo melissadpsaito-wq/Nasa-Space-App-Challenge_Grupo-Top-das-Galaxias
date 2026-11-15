@@ -64,3 +64,16 @@ Sem bioma; análise nov/2000 → dez/2025 com Terra, Aqua, S-NPP e NOAA-20 em to
 | Mudou | sem `cell_biome` (D33) · `winner()` (D31) · `passes_reader()` (M2) · `check_config()` |
 | Pendente Capitão | D30 (fit Aqua→S-NPP 2012–2019) · D31 · D32 |
 | Próximo | Melissa: M1 (§3.2) · Samuel: `validate/run.py` com Identity e GlobalFactor |
+
+---
+## Sáb 14/11 22:47 · Dados 2.4 export provisório ✅ (D38)
+| Item | Situação |
+|---|---|
+| Código | `pipeline/export.py` · `tests/test_export.py` (7/7) · branch `dados/export` (`df9f89a`) |
+| Entrada | `data/processed/res5/harm_series.parquet` (M1 λ = 20, provisória, `lo = hi`) |
+| Saída | 28.769 células (4 sem fogo omitidas) × 302 meses (200011–202512) |
+| Conservação | `raw` idêntica · `cells/lo/hi` −0,09% (arredondamento × 10 de célula-mês < 0,05; dentro da tolerância) |
+| R06 | **Acionado**: arquivo único 100,5 MB → 128 tiles `harm_<pai res 2>.json` · mediana 0,94 MB · máx 1,35 MB · total 101 MB |
+| Git (D38) | Tiles `harm_82*.json` no `.gitignore`; Luana recebe zip pelo Drive; commit só do export final (antes do CP7) |
+| Front | Célula res 5 → `cellToParent(cell, 2)` → `harm_<pai>.json`; 404 = sem focos |
+Decisões: **D38 decidida (22:47)** · Riscos: R06 acionado (mitigado por tiles). Próximo (Dados): reexport após CP3 e CP4 · P1 features (série res 5).
