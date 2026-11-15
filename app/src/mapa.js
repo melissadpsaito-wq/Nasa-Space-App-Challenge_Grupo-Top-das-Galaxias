@@ -3,18 +3,21 @@ import 'leaflet/dist/leaflet.css';
 import './mapa.css';
 import * as L from 'leaflet';
 import * as Plot from '@observablehq/plot';
-import { latLngToCell, cellToParent, cellToBoundary, polygonToCells } from 'h3-js';
+import { latLngToCell, cellToParent, cellToBoundary, polygonToCells, cellsToMultiPolygon, cellArea } from 'h3-js';
 import { RES_PRODUCT, RES_TILE, TileStore, areaSeries, slicePeriod, periodIndex, cellTotals, summarize } from './data.js';
 import { initI18n, onLang, t, monthName, ymLabel, fmt } from './i18n.js';
 import { renderCalendar, COLOR, MIN_SHOW } from './calendar.js';
+import { fireScore, typicalPeak, historicalChance, chanceAllMonths, toCSV } from './analytics.js';
 
 const FIRST = 200011, LAST = 202512;   // série nov/2000–dez/2025 (D33)
 const MIN_ZOOM_HEX = 7;                // abaixo disso não desenha hexágonos (peso dos tiles)
 const MAX_PARENTS = 12;                // ~12 tiles × ~1 MB no máximo por vista
+const MAX_PARENTS_AREA = 16;           // área desenhada: até ~16 tiles (~um estado médio)
 const store = new TileStore(import.meta.env.BASE_URL);
 const $ = (id) => document.getElementById(id);
 
-const state = { from: FIRST, to: LAST, mode: 'harm', tab: 'history', cell: null, lat: null, lon: null, series: null, error: null };
+// sel = { kind: 'point', lat, lon, cells: [cell] } | { kind: 'area', ring, cells }
+const state = { from: FIRST, to: LAST, mode: 'harm', tab: 'history', sel: null, series: null, error: null };
 
 initI18n();
 
@@ -113,21 +116,17 @@ async function refreshMap() {
 }
 map.on('moveend', refreshMap);
 
-// ---------- seleção de local ----------
+// ---------- seleção: ponto ou área (4.2) ----------
+const wrapLon = (lng) => ((lng + 540) % 360) - 180;
 let selSeq = 0;
-async function select(lat, lon) {
+async function loadSelection(sel, highlight) {
   const my = ++selSeq;
-  Object.assign(state, { lat, lon, cell: latLngToCell(lat, lon, RES_PRODUCT), series: null, error: null });
-  $('lat').value = lat.toFixed(4); $('lon').value = lon.toFixed(4);
+  Object.assign(state, { sel, series: null, error: null });
   if (selLayer) selLayer.remove();
-  selLayer = L.layerGroup([
-    L.polygon(cellToBoundary(state.cell), { color: '#ff5a1f', weight: 3, fill: false }),
-    L.circleMarker([lat, lon], { radius: 5, color: '#0b2545', weight: 2, fillColor: '#fff', fillOpacity: 1 }),
-  ]).addTo(map);
-  if (map.getZoom() < MIN_ZOOM_HEX) map.setView([lat, lon], 8); else map.panTo([lat, lon]);
+  selLayer = L.layerGroup(highlight).addTo(map);
   renderPanel('loading');
   try {
-    const s = await areaSeries(store, [state.cell], cellToParent);
+    const s = await areaSeries(store, sel.cells, cellToParent);
     if (my !== selSeq) return;
     state.series = s;
   } catch (err) {
@@ -137,7 +136,81 @@ async function select(lat, lon) {
   renderPanel();
 }
 
-map.on('click', (e) => select(e.latlng.lat, ((e.latlng.lng + 540) % 360) - 180));
+function select(lat, lon) {
+  const cell = latLngToCell(lat, lon, RES_PRODUCT);
+  $('lat').value = lat.toFixed(4); $('lon').value = lon.toFixed(4);
+  if (map.getZoom() < MIN_ZOOM_HEX) map.setView([lat, lon], 8); else map.panTo([lat, lon]);
+  loadSelection({ kind: 'point', lat, lon, cells: [cell] }, [
+    L.polygon(cellToBoundary(cell), { color: '#ff5a1f', weight: 3, fill: false }),
+    L.circleMarker([lat, lon], { radius: 5, color: '#0b2545', weight: 2, fillColor: '#fff', fillOpacity: 1 }),
+  ]);
+}
+
+/** ring = [[lat, lon], …] desenhado pelo usuário → células res 5 com centro dentro (área pequena: célula do centro). */
+function selectArea(ring) {
+  let cells = polygonToCells(ring, RES_PRODUCT);
+  if (!cells.length) {
+    const c = ring.reduce(([a, b], [x, y]) => [a + x / ring.length, b + y / ring.length], [0, 0]);
+    cells = [latLngToCell(c[0], c[1], RES_PRODUCT)];
+  }
+  const parents = new Set(cells.map((c) => cellToParent(c, RES_TILE)));
+  const shape = L.polygon(ring, { color: '#0b2545', weight: 2, dashArray: '5 4', fill: false });
+  if (parents.size > MAX_PARENTS_AREA) {
+    ++selSeq;
+    Object.assign(state, { sel: null, series: null, error: null });
+    if (selLayer) selLayer.remove();
+    selLayer = L.layerGroup([shape]).addTo(map);
+    $('panel').innerHTML = `<p class="panel-msg">${t('draw.big')}</p>`;
+    return;
+  }
+  const km2 = cells.reduce((a, c) => a + cellArea(c, 'km2'), 0);
+  map.fitBounds(shape.getBounds(), { maxZoom: 9, padding: [20, 20] });
+  loadSelection({ kind: 'area', ring, cells, km2 }, [
+    L.polygon(cellsToMultiPolygon(cells), { color: '#ff5a1f', weight: 2, fillOpacity: 0.05 }),
+    shape,
+  ]);
+}
+
+// ---------- desenho de área (cliques no mapa; sem leaflet-draw) ----------
+const draw = { on: false, pts: [], layer: L.layerGroup().addTo(map) };
+function drawRender() {
+  draw.layer.clearLayers();
+  if (draw.pts.length > 1) L.polyline(draw.pts.length > 2 ? [...draw.pts, draw.pts[0]] : draw.pts, { color: '#0b2545', weight: 2, dashArray: '5 4' }).addTo(draw.layer);
+  draw.pts.forEach((p) => L.circleMarker(p, { radius: 4, color: '#0b2545', weight: 2, fillColor: '#fff', fillOpacity: 1, interactive: false }).addTo(draw.layer));
+  $('draw-finish').disabled = draw.pts.length < 3;
+  $('draw-hint').textContent = draw.on ? t(draw.pts.length < 3 ? 'draw.hint' : 'draw.hint2') : '';
+}
+function drawMode(on) {
+  draw.on = on; draw.pts = [];
+  map.getContainer().classList.toggle('drawing', on);
+  if (on) map.doubleClickZoom.disable(); else map.doubleClickZoom.enable();
+  $('draw-start').hidden = on; $('draw-finish').hidden = !on; $('draw-cancel').hidden = !on;
+  drawRender();
+}
+function drawFinish() {
+  if (draw.pts.length < 3) return;
+  const ring = draw.pts.map((p) => [p.lat, wrapLon(p.lng)]);
+  drawMode(false);
+  selectArea(ring);
+}
+$('draw-start').addEventListener('click', () => drawMode(true));
+$('draw-cancel').addEventListener('click', () => drawMode(false));
+$('draw-finish').addEventListener('click', drawFinish);
+document.addEventListener('keydown', (e) => {
+  if (!draw.on) return;
+  if (e.key === 'Escape') drawMode(false);
+  if (e.key === 'Enter') { e.preventDefault(); drawFinish(); }
+  if (e.key === 'Backspace' && document.activeElement === document.body) { draw.pts.pop(); drawRender(); }
+});
+
+map.on('click', (e) => {
+  if (!draw.on) return select(e.latlng.lat, wrapLon(e.latlng.lng));
+  const last = draw.pts.at(-1);
+  if (last && map.latLngToContainerPoint(last).distanceTo(e.containerPoint) < 4) return; // 2º clique do duplo clique
+  draw.pts.push(e.latlng);
+  drawRender();
+});
+map.on('dblclick', () => { if (draw.on) drawFinish(); });
 
 $('form-loc').addEventListener('submit', (e) => {
   e.preventDefault();
@@ -179,6 +252,58 @@ input.addEventListener('keydown', (e) => {
 document.addEventListener('click', (e) => { if (!input.contains(e.target) && !lista.contains(e.target)) lista.style.display = 'none'; });
 
 // ---------- painel ----------
+const BAND_CLASS = { extreme: 'b-extreme', high: 'b-high', above: 'b-above', normal: 'b-normal', none: 'b-normal' };
+
+function scoreKpi(sc) {
+  const lab = `<span class="label">${t('score.title')} · ${ymLabel(sc.ym)}</span>`;
+  if (sc.status === 'nodata') return `<div class="kpi">${lab}<b>—</b></div>`;
+  if (sc.status === 'insufficient') return `<div class="kpi">${lab}<b>—</b><span class="muted">${t('ind.insufficient')}</span></div>`;
+  if (sc.band === 'none') return `<div class="kpi">${lab}<b>—</b><span class="muted">${t('score.none')}</span></div>`;
+  const ratio = sc.ratio == null ? '' : ` · ${fmt(sc.ratio)}× ${t('score.median')}`;
+  return `<div class="kpi score ${BAND_CLASS[sc.band]}">${lab}<b>${sc.score}<small>/100</small></b>
+    <span class="muted">${t(`band.${sc.band}`)}${ratio} · ${sc.years} ${t('ind.years')}</span></div>`;
+}
+
+function chanceKpi(c) {
+  const lab = `<span class="label">${t('chance.title')} · ${monthName(c.month)}</span>`;
+  if (c.status !== 'ok') return `<div class="kpi">${lab}<b>—</b><span class="muted">${t('ind.insufficient')}</span></div>`;
+  return `<div class="kpi">${lab}<b>${c.pct}%</b><span class="muted">${c.k} ${t('chance.of')} ${c.n} ${t('ind.years')} (${c.from}–${c.to})</span></div>`;
+}
+
+function peakKpi(p) {
+  const lab = `<span class="label">${t('peak.title')}</span>`;
+  if (p.status !== 'ok') return `<div class="kpi">${lab}<b>—</b><span class="muted">${t('ind.insufficient')}</span></div>`;
+  const second = p.second ? ` · ${t('peak.then')} ${monthName(p.second.month)} (${p.second.hits})` : '';
+  return `<div class="kpi">${lab}<b>${monthName(p.month)}</b><span class="muted">${p.hits} ${t('chance.of')} ${p.years} ${t('ind.years')}${second}</span></div>`;
+}
+
+function chanceStrip(all) {
+  const cells = all.map((c) => {
+    const v = c.status === 'ok' ? `${c.k}/${c.n}` : '–';
+    const cls = c.status !== 'ok' ? 'na' : c.k >= 7 ? 'hi' : c.k >= 4 ? 'mid' : 'lo';
+    return `<li class="${cls}" title="${monthName(c.month)}: ${c.status === 'ok' ? `${c.k} ${t('chance.of')} ${c.n}` : t('ind.insufficient')}"><span>${monthName(c.month)}</span><b>${v}</b></li>`;
+  }).join('');
+  return `<h3 class="cal-title">${t('chance.strip')}</h3><ul class="chance-strip">${cells}</ul>`;
+}
+
+function downloadCSV(s) {
+  const sel = state.sel;
+  const tag = sel.kind === 'point' ? `${sel.lat.toFixed(3)}_${sel.lon.toFixed(3)}` : `area_${sel.cells.length}cells`;
+  const blob = new Blob([toCSV(s)], { type: 'text/csv;charset=utf-8' });
+  const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: `fire-almanac_${tag}_${s.months[0]}-${s.months.at(-1)}.csv` });
+  document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+function regionHead(sel) {
+  if (sel.kind === 'point') return `<div><span class="label">${t('panel.area')}</span>
+      <strong>${sel.lat.toFixed(3)}, ${sel.lon.toFixed(3)}</strong>
+      <span class="muted">${t('panel.cell')} <code>${sel.cells[0]}</code></span></div>`;
+  return `<div><span class="label">${t('panel.drawn')}</span>
+      <strong>${sel.cells.length} ${t('panel.cells')} · ~${fmt(sel.km2)} km²</strong>
+      <span class="muted">${t('panel.drawn.u')}</span></div>`;
+}
+
 function renderPanel(status) {
   const el = $('panel');
   const msg = (k, extra = '') => { el.innerHTML = `<p class="panel-msg">${t(k)} ${extra}</p>`; };
@@ -186,20 +311,22 @@ function renderPanel(status) {
   if (state.tab === 'outlook') return msg('soon.outlook');
   if (status === 'loading') return msg('panel.loading');
   if (state.error) return msg('panel.error', state.error);
-  if (!state.cell) return msg('panel.empty');
+  if (!state.sel) return msg('panel.empty');
   if (!state.series || state.series.empty) {
-    const dev = import.meta.env.DEV ? `<br><small>(dev: harm_${cellToParent(state.cell, RES_TILE)}.json em app/public/data/?)</small>` : '';
+    const dev = import.meta.env.DEV ? `<br><small>(dev: harm_${cellToParent(state.sel.cells[0], RES_TILE)}.json em app/public/data/?)</small>` : '';
     return msg('panel.nofire', dev);
   }
-  const s = slicePeriod(state.series, state.from, state.to);
+  const full = state.series;
+  const s = slicePeriod(full, state.from, state.to);
   const r = summarize(s);
   if (!r) return msg('panel.nofire');
   const lowConf = s.low_conf.reduce((a, b) => a + b, 0);
+  // Indicadores (D25, D27): série completa, harmonizada e mensal; o mês de referência é o "Até" do período.
+  const ref = r.last;
+  const sc = fireScore(full, ref);
   el.innerHTML = `
     <div class="panel-head">
-      <div><span class="label">${t('panel.area')}</span>
-        <strong>${state.lat.toFixed(3)}, ${state.lon.toFixed(3)}</strong>
-        <span class="muted">${t('panel.cell')} <code>${state.cell}</code></span></div>
+      ${regionHead(state.sel)}
       <div><span class="label">${t('panel.period')}</span><strong>${ymLabel(r.first)} – ${ymLabel(r.last)}</strong></div>
     </div>
     <div class="kpis">
@@ -208,13 +335,22 @@ function renderPanel(status) {
       <div class="kpi"><span class="label">${t('panel.peak')}</span><b>${ymLabel(r.peak.ym)}</b><span class="muted">${fmt(r.peak.value)} · ${r.peak.src}</span></div>
       ${lowConf ? `<div class="kpi"><span class="label">${t('panel.lowconf')}</span><b>${lowConf}</b></div>` : ''}
     </div>
+    <div class="kpis ind">
+      ${scoreKpi(sc)}
+      ${chanceKpi(historicalChance(full, ref % 100))}
+      ${peakKpi(typicalPeak(full))}
+    </div>
+    ${chanceStrip(chanceAllMonths(full))}
+    <p class="muted small">${t('ind.how')}</p>
     <h3 class="cal-title">${t('cal.title')} · ${state.mode === 'raw' ? t('f.raw') : t('f.harm')}</h3>
     <div id="calendar" class="calendar"></div>
     <p class="muted small">${t('cal.lowconf')} · ${t('cal.toggle')}</p>
-    <p class="note">${t('panel.note')}</p>`;
+    <button type="button" id="csv-btn" class="btn-apply btn-navy btn-csv">${t('csv.btn')}</button>
+    <p class="note">${t(state.sel.kind === 'area' ? 'panel.note.area' : 'panel.note')}</p>`;
   renderCalendar($('calendar'), s, state.mode);
+  $('csv-btn').addEventListener('click', () => downloadCSV(s));
 }
 
-onLang(() => { fillSelects(); $('filtro-status').textContent = ''; refreshMap(); renderPanel(); });
+onLang(() => { fillSelects(); $('filtro-status').textContent = ''; drawRender(); refreshMap(); renderPanel(); });
 renderPanel();
 refreshMap();

@@ -95,3 +95,27 @@ code { font-size: .78rem; }
   .work { grid-template-columns: 1.25fr 1fr; align-items: start; }
   .work .map-container { min-height: 72vh; position: sticky; top: 12px; }
 }
+
+/* 4.2 — desenho de área, indicadores, CSV */
+.draw-ctl { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; flex-basis: 100%; }
+.draw-ctl .range-note { flex-basis: 100%; margin: 0; }
+.btn-outline { background: #fff; color: var(--navy); border: 1px solid var(--navy); }
+.btn-outline:hover { background: #f1f4f8; }
+.btn-apply:disabled { cursor: not-allowed; }
+#map.drawing, #map.drawing .leaflet-interactive { cursor: crosshair; }
+.kpis.ind .kpi b small { font-size: .75rem; font-weight: 500; color: var(--muted); }
+/* faixas do score: cividis (acessível) + texto da faixa; nunca só a cor */
+.kpi.score { border-left-width: 6px; }
+.kpi.b-normal { border-left-color: #e9e4c8; }
+.kpi.b-above { border-left-color: #a59c74; }
+.kpi.b-high { border-left-color: #575c6d; }
+.kpi.b-extreme { border-left-color: #00204d; }
+.chance-strip { display: grid; grid-template-columns: repeat(12, 1fr); gap: 4px; list-style: none; padding: 0; margin: 0 0 8px; }
+.chance-strip li { display: flex; flex-direction: column; align-items: center; border-radius: 6px; padding: 4px 0; font-size: .72rem; border: 1px solid var(--line); }
+.chance-strip li b { font-size: .8rem; }
+.chance-strip li.lo { background: #f7f5ec; }
+.chance-strip li.mid { background: #c9c19a; }
+.chance-strip li.hi { background: #3e4a6b; color: #fff; }
+.chance-strip li.na { color: var(--muted); }
+.btn-csv { margin-top: 10px; }
+@media (max-width: 520px) { .chance-strip { grid-template-columns: repeat(6, 1fr); } }

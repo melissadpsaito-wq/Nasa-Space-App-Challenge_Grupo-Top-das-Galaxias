@@ -31,6 +31,12 @@
         <div class="field"><label for="lat" data-i18n="loc.lat">Latitude</label><input id="lat" inputmode="decimal" placeholder="-18.50" /></div>
         <div class="field"><label for="lon" data-i18n="loc.lon">Longitude</label><input id="lon" inputmode="decimal" placeholder="-57.00" /></div>
         <button type="submit" class="btn-apply btn-navy" data-i18n="loc.go">Go</button>
+        <div class="draw-ctl">
+          <button type="button" id="draw-start" class="btn-apply btn-outline" data-i18n="draw.start">Draw area</button>
+          <button type="button" id="draw-finish" class="btn-apply btn-navy" data-i18n="draw.finish" hidden disabled>Finish area</button>
+          <button type="button" id="draw-cancel" class="btn-apply btn-outline" data-i18n="draw.cancel" hidden>Cancel</button>
+          <p id="draw-hint" class="range-note" role="status" aria-live="polite"></p>
+        </div>
       </form>
 
       <form id="form-filtros" class="filters" novalidate>

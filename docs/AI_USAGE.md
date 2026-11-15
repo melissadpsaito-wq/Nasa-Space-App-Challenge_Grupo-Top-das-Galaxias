@@ -30,6 +30,7 @@ Exigência do Space Apps: declarar onde e como a IA foi usada; imagem/vídeo ger
 | 15/11 | Claude (Anthropic) | Dados | `pipeline/daily_harm.py` (diário harmonizado, D43/D45) e explicação do termo aditivo; governança v2.12–v2.13 (D43–D45, R24, contrato §13) | Murilo |
 | 15/11 | Claude (Anthropic) | Ciência 3.3 | Rascunho de `pipeline/bridges/m2.py` (limiar de FRP, M2, `--eval`), `tests/test_m2.py` e `docs/CIENCIA-3.3-M2.md`; prova M2 = M1 em λ = 0 e λ → ∞; correção do `--eval` (só célula-mês ativas); governança v2.14 | Murilo |
 | 15/11 | Claude (Anthropic) | Front 4.1 / D46 | Port do front do Samuel para `app/` estático: i18n EN/PT, mapa com período e hexágonos, calendário (Plot), leitor de tiles + 11 testes, `pages.yml`; correção do import do Leaflet; teste em navegador com bibliotecas e tiles reais; resumo `docs/FRONT-SISTEMA-WEB.md`; governança v2.15 | Murilo |
+| 15/11 | Claude (Anthropic) | Front 4.2 | Rascunho de `app/src/analytics.js` (Fire Anomaly Score e pico típico D25, chance histórica D27, CSV §7) + `test/analytics.test.js` (9 testes); desenho de área por cliques (`polygonToCells` res 5) e painel com indicadores e botão CSV em `mapa.js`; textos EN/PT | Murilo |
 <!-- Se alguém usar GitHub Copilot ou outra IA, adicionar uma linha aqui. -->
 
 ### Texto para o formulário (rascunho)
