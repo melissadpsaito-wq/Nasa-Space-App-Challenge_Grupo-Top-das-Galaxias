@@ -21,3 +21,4 @@ Thumbs.db
 
 data/clean_*/
 data/processed/
+app/public/data/harm_82*.json
