@@ -60,7 +60,7 @@ Resumo do FRP dentro da célula de 2 km: **máximo** (D26, proposta). Unidade de
 ## 6. Arquivos novos do app (v2)
 | Arquivo | Conteúdo | Escreve |
 |---|---|---|
-| `areas.json` | `[{ "id", "name", "polygon": [[lat, lng], ...], "story" }]` — Pantanal e SP canavieira (D22) | Murilo |
+| `areas.json` | ~~`[{ "id", "name", "polygon": [[lat, lng], ...], "story" }]` — Pantanal e SP canavieira (D22)~~ — fora por D47 | Murilo |
 | `harm_<parent>.json` (só se R06 acionar) | Mesmo formato da §3, um arquivo por célula-pai H3 res 2 | Murilo |
 | `tests/score_cases.json` | 3 áreas × mês: entrada (vetor da área) e saída esperada (score, razão, pico) | Samuel |
 
