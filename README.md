@@ -1,6 +1,8 @@
 # Fire Almanac — Harmonized MODIS + VIIRS Burning Activity Calendar
 
 **NASA Space Apps Challenge 2026 · Challenge: Harmonization of MODIS and VIIRS Hot Spots · Local event: São Paulo, Brazil**
+## Link web page:
+http://melissadpsaito-wq.github.io/Nasa-Space-App-Challenge_Grupo-Top-das-Galaxias/
 
 > On November 2, 2026, the S-NPP satellite stopped observing. Our hotspot record survived.
 
