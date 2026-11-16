@@ -4,7 +4,7 @@
 // Tile = um arquivo por célula-pai H3 res 2: climatologia_<pai>.json, células res 5,
 // cada célula com 12 inteiros (jan..dez) = nº de anos com fogo. pct = inteiro / n_years × 100.
 
-import { RES_TILE } from './data.js';
+import { RES_TILE, isMissingTile } from './data.js';
 
 export const MONTHS_N = 12;
 
@@ -37,7 +37,7 @@ export class ClimaStore {
     if (!this.cache.has(parent)) {
       const p = (async () => {
         const r = await this.fetch(climaUrl(this.base, parent));
-        if (r.status === 404) return null;
+        if (isMissingTile(r)) return null; // 404 ou fallback HTML do Vite
         if (!r.ok) throw new Error(`clima ${parent}: HTTP ${r.status}`);
         const t = await r.json();
         const errs = validateClimaTile(t);
@@ -55,6 +55,7 @@ export class ClimaStore {
  * 12 percentuais (jan..dez) de uma seleção: 1 célula = ponto; várias = média das células da área.
  * Célula ausente num tile existente = sem fogo na janela (zeros), como no data.js; ela conta na média.
  * empty = nenhuma célula da seleção tem dados (nenhum tile ou nenhuma célula listada).
+ * outOfScope = nenhum tile existe para a seleção (ex.: ponto fora do Brasil).
  */
 export async function areaClimatologia(store, cells, cellToParent) {
   const byParent = new Map();
@@ -87,5 +88,5 @@ export async function areaClimatologia(store, cells, cellToParent) {
 
   const total = cells.length;
   const pct = nYears ? hits.map((h) => (100 * h) / (total * nYears)) : new Array(MONTHS_N).fill(0);
-  return { pct, nYears, cellsTotal: total, cellsWithData, empty: cellsWithData === 0 };
+  return { pct, nYears, cellsTotal: total, cellsWithData, empty: cellsWithData === 0, outOfScope: nYears === null };
 }

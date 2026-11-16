@@ -34,6 +34,17 @@ export function validateTile(t) {
   return errs;
 }
 
+/**
+ * Tile inexistente → true (contrato §11: tratado como null).
+ * Além do 404, cobre o fallback de SPA do Vite (dev/preview): arquivo que não existe volta 200
+ * com o index.html (text/html). Sem isto, r.json() quebrava com "Unexpected token '<'" fora do Brasil.
+ */
+export function isMissingTile(r) {
+  if (r.status === 404) return true;
+  const ct = r.headers?.get?.('content-type') ?? '';
+  return Boolean(r.ok && ct.includes('text/html'));
+}
+
 /** Cache de tiles. 404 = pai sem fogo (contrato §11) → null. Outros erros sobem. */
 export class TileStore {
   constructor(base, fetchFn = globalThis.fetch.bind(globalThis)) {
@@ -45,7 +56,7 @@ export class TileStore {
     if (!this.cache.has(parent)) {
       const p = (async () => {
         const r = await this.fetch(tileUrl(this.base, parent));
-        if (r.status === 404) return null;
+        if (isMissingTile(r)) return null;
         if (!r.ok) throw new Error(`tile ${parent}: HTTP ${r.status}`);
         const t = await r.json();
         const errs = validateTile(t);
@@ -63,6 +74,7 @@ export class TileStore {
  * Série de uma área (1 célula = ponto lat/lon; várias = área desenhada).
  * Soma mês a mês e divide por 10. Célula ausente num tile existente = sem fogo (zeros).
  * low_conf da área = 1 se qualquer célula com fogo no mês tiver low_conf = 1 (conservador).
+ * outOfScope = nenhum tile existe para a seleção (ex.: ponto fora do Brasil) → painel mostra "fora do escopo".
  */
 export async function areaSeries(store, cells, cellToParent) {
   const byParent = new Map();
@@ -80,7 +92,7 @@ export async function areaSeries(store, cells, cellToParent) {
     else if (t.months.length !== months.length || t.months[0] !== months[0])
       throw new Error('tiles com meses diferentes (export misturado?)');
   }
-  if (!months) return { months: [], src: [], cellsWithFire: 0, cellsTotal: cells.length, empty: true };
+  if (!months) return { months: [], src: [], cellsWithFire: 0, cellsTotal: cells.length, empty: true, outOfScope: true };
 
   const n = months.length;
   const out = { harm: new Float64Array(n), raw: new Float64Array(n), lo: new Float64Array(n), hi: new Float64Array(n), low_conf: new Uint8Array(n) };
@@ -102,7 +114,7 @@ export async function areaSeries(store, cells, cellToParent) {
       }
     }
   });
-  return { months, src, ...out, cellsWithFire, cellsTotal: cells.length, empty: cellsWithFire === 0 };
+  return { months, src, ...out, cellsWithFire, cellsTotal: cells.length, empty: cellsWithFire === 0, outOfScope: false };
 }
 
 /** Índices [i0, i1] (inclusivos) do período from..to (AAAAMM) dentro de months; null se vazio. */
